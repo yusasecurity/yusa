@@ -40,7 +40,10 @@ function Masthead() {
           <a href="#gate" className="hover:text-bone">III. Gate</a>
           <a href="#use" className="hover:text-bone">IV. Use</a>
         </nav>
-        <span>v0.1 · runs local</span>
+        <span className="flex gap-5">
+          <a href="https://x.com/yusasecurity" target="_blank" rel="noopener noreferrer" className="hover:text-signal">X</a>
+          <a href="https://github.com/yusasecurity/yusa" target="_blank" rel="noopener noreferrer" className="hover:text-signal">GitHub</a>
+        </span>
       </div>
     </header>
   );
@@ -343,6 +346,10 @@ function Colophon() {
     <footer className="overflow-hidden border-t border-rule">
       <div className="mx-auto flex max-w-[1280px] flex-wrap justify-between gap-4 px-5 pt-6 font-mono text-[11px] uppercase tracking-[0.12em] text-ash sm:px-8">
         <span>Nothing you paste leaves this page</span>
+        <span className="flex gap-5">
+          <a href="https://x.com/yusasecurity" target="_blank" rel="noopener noreferrer" className="hover:text-bone">@yusasecurity</a>
+          <a href="https://github.com/yusasecurity/yusa" target="_blank" rel="noopener noreferrer" className="hover:text-bone">github</a>
+        </span>
         <span>3D button: evil-buttons, Apache-2.0</span>
       </div>
       <div className="condensed -mb-[0.2em] select-none text-center text-[38vw] font-black leading-none tracking-[-0.03em] text-coal" aria-hidden>
