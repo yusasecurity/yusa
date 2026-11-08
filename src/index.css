@@ -1,0 +1,48 @@
+@import "tailwindcss";
+@import "@fontsource-variable/archivo/wdth.css";
+@import "@fontsource-variable/jetbrains-mono";
+@import "@fontsource/instrument-serif/400-italic.css";
+
+@theme {
+  --font-sans: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+  --color-ink: #0c0c0b;
+  --color-coal: #161614;
+  --color-rule: #2a2a27;
+  --color-bone: #f1ede4;
+  --color-ash: #8f8b82;
+  --color-signal: #ff4d00;
+}
+
+html {
+  background: var(--color-ink);
+  color: var(--color-bone);
+  color-scheme: dark;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-signal);
+  color: var(--color-ink);
+}
+
+.condensed {
+  font-stretch: 62%;
+}
+
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+
+.marquee {
+  animation: marquee 70s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee { animation: none; }
+}

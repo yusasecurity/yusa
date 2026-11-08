@@ -1,0 +1,20 @@
+{
+  "name": "YUSA Pack",
+  "version": "0.1.0",
+  "description": "Prompt-injection firewall for Aeon. Scans installed skills, soul and strategy files for instructions hidden from the operator (Unicode TAG smuggling, zero-width splits, look-alike letters, hidden HTML, base64) and for drain, exfil and forged-delimiter directives. Keyless, read-only, no network.",
+  "author": "yusasecurity",
+  "license": "MIT",
+  "homepage": "https://yusa-two.vercel.app",
+  "skills": [
+    {
+      "slug": "yusa-skill-audit",
+      "path": "skills/yusa-skill-audit",
+      "description": "Scan every installed SKILL.md for hidden or obfuscated prompt injection and alert only on new or changed hits - keyless, read-only",
+      "category": "dev",
+      "schedule": "0 7 * * *",
+      "default_enabled": false,
+      "secrets_required": [],
+      "capabilities": ["read_only", "sends_notifications"]
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  body { margin: 0; background: #0c0c0b; color: #f1ede4; font: 12px "JetBrains Mono", monospace; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #2a2a27; }
+  .cell { background: #0c0c0b; padding: 28px 24px; display: flex; flex-direction: column; gap: 22px; }
+  .cell.light { background: #f1ede4; color: #0c0c0b; }
+  .tag { letter-spacing: .14em; text-transform: uppercase; color: #8f8b82; }
+  .big svg { width: 168px; height: 168px; }
+  .row { display: flex; align-items: flex-end; gap: 18px; }
+  .lock { display: flex; align-items: center; gap: 12px; }
+  .lock b { font: 900 44px/1 system-ui, sans-serif; letter-spacing: .02em; transform: scaleX(.72); transform-origin: left; display: inline-block; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <!-- A: block Y, the notch catches the hidden payload -->
+    <symbol id="a" viewBox="0 0 64 64">
+      <path d="M6 6h16v20h20V6h16v34H40v18H24V40H6z" fill="var(--fg)" />
+      <rect x="27" y="6" width="10" height="10" fill="#ff4d00" />
+    </symbol>
+    <!-- B: shutter, a slot that only lets the truth through -->
+    <symbol id="b" viewBox="0 0 64 64">
+      <rect x="4" y="10" width="56" height="15" fill="var(--fg)" />
+      <rect x="4" y="39" width="56" height="15" fill="var(--fg)" />
+      <rect x="25" y="25" width="14" height="14" fill="#ff4d00" />
+    </symbol>
+    <!-- C: fork, one branch is what you read, the other gets gated -->
+    <symbol id="c" viewBox="0 0 64 64">
+      <path d="M32 60V34L12 8" stroke="var(--fg)" stroke-width="11" fill="none" stroke-linejoin="miter" />
+      <path d="M32 34 46 16" stroke="#ff4d00" stroke-width="11" fill="none" />
+      <rect x="40" y="4" width="22" height="7" fill="var(--fg)" transform="rotate(38 51 7.5)" />
+    </symbol>
+    <!-- D: redacted Y, the bar is the layer only the model sees -->
+    <symbol id="d" viewBox="0 0 64 64">
+      <path d="M4 4h56v56H4z" fill="var(--fg)" />
+      <path d="M14 10h11l7 15 7-15h11L37 36v18H27V36z" fill="var(--bg)" />
+      <rect x="4" y="27" width="56" height="9" fill="#ff4d00" />
+    </symbol>
+  </defs>
+</svg>
+
+<div class="grid" id="g"></div>
+<script>
+  const opts = [["a","A · Notch"],["b","B · Shutter"],["c","C · Fork"],["d","D · Redacted"]];
+  const g = document.getElementById("g");
+  for (const light of [false, true]) {
+    for (const [id, name] of opts) {
+      const fg = light ? "#0c0c0b" : "#f1ede4", bg = light ? "#f1ede4" : "#0c0c0b";
+      const use = (s) => `<svg width="${s}" height="${s}" style="--fg:${fg};--bg:${bg}"><use href="#${id}"/></svg>`;
+      g.insertAdjacentHTML("beforeend", `
+        <div class="cell ${light ? "light" : ""}">
+          <span class="tag">${name}</span>
+          <div class="big">${use(168)}</div>
+          <div class="row">${use(48)}${use(32)}${use(16)}</div>
+          <div class="lock">${use(44)}<b>YUSA</b></div>
+        </div>`);
+    }
+  }
+</script>
+</body>
+</html>
