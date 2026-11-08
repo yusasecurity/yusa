@@ -4,7 +4,7 @@
 
 YUSA is a prompt-injection firewall for AI agents. It reads text the way a model reads it, finds the instructions hidden from people, and stops a hijacked agent before it acts.
 
-Live demo: https://yusa-two.vercel.app
+Live demo: https://yusasecurity.xyz
 
 ## What it does
 
