@@ -49,7 +49,6 @@ npm install
 npm test               # engine tests
 npm run build          # site -> dist/
 npm run build:skill    # rebuild skills/yusa-skill-audit/yusa.mjs
-node scripts/brand.mjs && node scripts/banner.mjs   # logo, avatar, banner, OG
 ```
 
 ## Limits

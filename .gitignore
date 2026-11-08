@@ -4,4 +4,12 @@ dist
 .env*
 dev.log
 *.tsbuildinfo
+
+# brand assets stay local; Vercel deploys them from disk
+public/brand/
+public/logo-sheet.html
+brand/
+scripts/ape-sheet.mjs
+scripts/brand.mjs
+scripts/banner.mjs
 ape-sheet.png
