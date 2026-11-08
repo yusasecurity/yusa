@@ -30,6 +30,14 @@ function redact(s: string): string {
   return s.length <= 12 ? s.slice(0, 4) + "…" : s.slice(0, 6) + "…" + s.slice(-4);
 }
 
+/** Mask anything secret-shaped before text leaves the scanner. Output-side, so it masks bare 64-hex too. */
+export function maskSecrets(s: string): string {
+  let out = s;
+  for (const r of SECRETS) out = out.replace(new RegExp(r.re.source, r.re.flags), (m) => redact(m));
+  out = out.replace(/(?:0x)?[0-9a-fA-F]{64}(?![0-9a-fA-F])/g, (m) => redact(m));
+  return out.replace(/\b(?:[a-z]{3,8}\s+){11,23}[a-z]{3,8}\b/g, (m) => (m.split(/\s+/).length >= 12 ? "[12+ word phrase masked]" : m));
+}
+
 export interface ScanOptions {
   /** "skill": auditing a SKILL.md / prompt file. Quoted and code spans are treated as mentions, shell is expected. */
   mode?: "input" | "skill";

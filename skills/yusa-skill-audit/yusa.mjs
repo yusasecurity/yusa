@@ -348,6 +348,13 @@ const HIDDEN_LAYER_BONUS = 15;
 function redact(s) {
 	return s.length <= 12 ? s.slice(0, 4) + "…" : s.slice(0, 6) + "…" + s.slice(-4);
 }
+/** Mask anything secret-shaped before text leaves the scanner. Output-side, so it masks bare 64-hex too. */
+function maskSecrets(s) {
+	let out = s;
+	for (const r of SECRETS) out = out.replace(new RegExp(r.re.source, r.re.flags), (m) => redact(m));
+	out = out.replace(/(?:0x)?[0-9a-fA-F]{64}(?![0-9a-fA-F])/g, (m) => redact(m));
+	return out.replace(/\b(?:[a-z]{3,8}\s+){11,23}[a-z]{3,8}\b/g, (m) => m.split(/\s+/).length >= 12 ? "[12+ word phrase masked]" : m);
+}
 const SKILL_IGNORED = /* @__PURE__ */ new Set(["ACT-005", "ACT-006"]);
 function stripMentions(s) {
 	return s.replace(/```[\s\S]*?```/g, " ").replace(/`[^`\n]*`/g, " ").replace(/"[^"\n]{0,200}"|“[^”\n]{0,200}”|'[^'\n]{4,200}'/g, " ");
@@ -473,17 +480,18 @@ if (json) console.log(JSON.stringify(results.map(({ file, r }) => ({
 		id: f.id,
 		layer: f.layer,
 		why: f.why,
-		match: f.match
+		match: maskSecrets(f.match)
 	})),
 	hidden: r.hiddenText.map((h) => ({
 		layer: h.layer,
-		text: h.text.slice(0, 300)
+		text: maskSecrets(h.text).slice(0, 160)
 	}))
 }))));
 else {
 	for (const { file, r } of results) {
 		console.log(`${r.verdict.toUpperCase().padEnd(6)} ${String(r.score).padStart(3)}  ${relative(process.cwd(), file)}`);
-		for (const f of r.findings) console.log(`         ${f.id} [${f.layer}] ${f.why} «${f.match}»`);
+		for (const f of r.findings) console.log(`         ${f.id} [${f.layer}] ${f.why} «${maskSecrets(f.match)}»`);
+		for (const h of r.hiddenText) console.log(`         hidden[${h.layer}]: ${maskSecrets(h.text).slice(0, 160)}`);
 	}
 	const n = (v) => results.filter((x) => x.r.verdict === v).length;
 	console.log(`\n${files.length} files · ${n("block")} block · ${n("review")} review · ${n("allow")} allow`);

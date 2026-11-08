@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import { scan, type ScanResult } from "./engine/scan.ts";
+import { maskSecrets, scan, type ScanResult } from "./engine/scan.ts";
 
 // Usage: node yusa.mjs <file|dir>... [--json]
 // Dirs are walked for SKILL.md and *.md. Exit 2 if any file blocks, 1 if any needs review.
@@ -23,13 +23,14 @@ if (json) {
     file: relative(process.cwd(), file),
     verdict: r.verdict,
     score: r.score,
-    findings: r.findings.map((f) => ({ id: f.id, layer: f.layer, why: f.why, match: f.match })),
-    hidden: r.hiddenText.map((h) => ({ layer: h.layer, text: h.text.slice(0, 300) })),
+    findings: r.findings.map((f) => ({ id: f.id, layer: f.layer, why: f.why, match: maskSecrets(f.match) })),
+    hidden: r.hiddenText.map((h) => ({ layer: h.layer, text: maskSecrets(h.text).slice(0, 160) })),
   }))));
 } else {
   for (const { file, r } of results) {
     console.log(`${r.verdict.toUpperCase().padEnd(6)} ${String(r.score).padStart(3)}  ${relative(process.cwd(), file)}`);
-    for (const f of r.findings) console.log(`         ${f.id} [${f.layer}] ${f.why} «${f.match}»`);
+    for (const f of r.findings) console.log(`         ${f.id} [${f.layer}] ${f.why} «${maskSecrets(f.match)}»`);
+    for (const h of r.hiddenText) console.log(`         hidden[${h.layer}]: ${maskSecrets(h.text).slice(0, 160)}`);
   }
   const n = (v: string) => results.filter((x) => x.r.verdict === v).length;
   console.log(`\n${files.length} files · ${n("block")} block · ${n("review")} review · ${n("allow")} allow`);

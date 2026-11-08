@@ -4,7 +4,7 @@
   "description": "Prompt-injection firewall for Aeon. Scans installed skills, soul and strategy files for instructions hidden from the operator (Unicode TAG smuggling, zero-width splits, look-alike letters, hidden HTML, base64) and for drain, exfil and forged-delimiter directives. Keyless, read-only, no network.",
   "author": "yusasecurity",
   "license": "MIT",
-  "homepage": "https://yusasecurity.xyz",
+  "homepage": "https://yusa-two.vercel.app",
   "skills": [
     {
       "slug": "yusa-skill-audit",
