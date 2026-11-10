@@ -15,7 +15,7 @@ Live demo: https://yusasecurity.xyz · X: [@yusasecurity](https://x.com/yusasecu
 | **Fence** | Wraps untrusted text in a tag with a random nonce per call, so the model can tell data from orders. |
 | **Gate** | Checks every tool call before it runs: tool, recipient address, host, value cap, unlimited approvals, secrets in outbound arguments. |
 
-The engine (`src/engine/`) has no dependencies and no network access. It runs in the browser, in Node, and as a CLI.
+The engine (`src/engine/`) has no dependencies and no network access. It runs in the browser, in Node, as a CLI, and as an MCP server.
 
 ## Use
 
@@ -36,6 +36,48 @@ node src/cli.ts -f page.html      # exit 0 allow · 1 review · 2 block
 curl -s $URL | node src/cli.ts
 ```
 
+## MCP server
+
+`mcp/yusa-mcp.mjs` gives any MCP client (Claude, Cursor, VS Code, ChatGPT desktop) three tools. One file, no dependencies, no network, stdio only.
+
+| Tool | Call it | Returns |
+|---|---|---|
+| `yusa_scan` | on any text from outside the conversation, before acting on it | `allow` / `review` / `block`, findings, decoded hidden text (secrets masked) |
+| `yusa_fence` | before putting that text into a prompt | the text in a random-nonce tag, invisible characters stripped |
+| `yusa_check_tool_call` | before any call that moves value or sends data out | `allow` / `block` with reasons |
+
+```bash
+git clone https://github.com/yusasecurity/yusa
+claude mcp add yusa -- node /path/to/yusa/mcp/yusa-mcp.mjs
+```
+
+Other clients:
+
+```json
+{
+  "mcpServers": {
+    "yusa": {
+      "command": "node",
+      "args": ["/path/to/yusa/mcp/yusa-mcp.mjs"],
+      "env": { "YUSA_POLICY": "/path/to/policy.json" }
+    }
+  }
+}
+```
+
+`YUSA_POLICY` is optional and only used by `yusa_check_tool_call`. Without it, every call must pass its own `policy`, and a call with neither is blocked.
+
+```json
+{
+  "allowTools": ["swap", "get_price"],
+  "allowAddresses": ["0x1111111111111111111111111111111111111111"],
+  "allowHosts": ["api.dexscreener.com"],
+  "maxValueEth": 0.05
+}
+```
+
+The tools are advisory: the model decides whether to call them. For a hard stop, call `checkToolCall` in your own code before the tool runs.
+
 ## Aeon skill pack
 
 `skills/yusa-skill-audit` scans every `SKILL.md`, `soul/` and `STRATEGY.md` in an [Aeon](https://www.aeon.fun) instance for hidden or obfuscated injection, and alerts only on new or changed hits. Keyless, read-only, no network. `yusa.mjs` is the engine bundled into one 15 KB file.
@@ -49,6 +91,7 @@ npm install
 npm test               # engine tests
 npm run build          # site -> dist/
 npm run build:skill    # rebuild skills/yusa-skill-audit/yusa.mjs
+npm run build:mcp      # rebuild mcp/yusa-mcp.mjs
 ```
 
 ## Limits

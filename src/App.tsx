@@ -336,6 +336,16 @@ function Integrate() {
           {"  score 100/100\n  OVR-001  Tells the agent to drop its\n           existing instructions\n\n"}
           <span className="text-ash">{"# exit 0 allow · 1 review · 2 block\n# no network, no dependencies, no keys"}</span>
         </pre>
+        <pre className="overflow-x-auto bg-coal p-6 font-mono text-[13px] leading-relaxed text-bone lg:col-span-2">
+          <span className="text-ash">{"# MCP: give Claude, Cursor or any MCP client the same checks\n"}</span>
+          {"$ claude mcp add yusa -- node yusa/mcp/yusa-mcp.mjs\n\n"}
+          <span className="text-signal">yusa_scan</span>
+          {"             before acting on anything from outside\n"}
+          <span className="text-signal">yusa_fence</span>
+          {"            before it goes into a prompt\n"}
+          <span className="text-signal">yusa_check_tool_call</span>
+          {"  before anything that moves value or data"}
+        </pre>
       </div>
     </section>
   );
