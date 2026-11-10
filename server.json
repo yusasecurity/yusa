@@ -1,0 +1,31 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.yusasecurity/yusa",
+  "title": "YUSA",
+  "description": "Prompt-injection firewall for AI agents: scan untrusted text, fence it, gate tool calls.",
+  "repository": {
+    "url": "https://github.com/yusasecurity/yusa",
+    "source": "github"
+  },
+  "websiteUrl": "https://yusasecurity.xyz",
+  "version": "0.2.0",
+  "packages": [
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/yusasecurity/yusa/releases/download/v0.2.0/yusa.mcpb",
+      "fileSha256": "3224cc3546d4c65e346ca468abe20f08d9911f86ca2edcc353b56650d3d5b3d1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "YUSA_POLICY",
+          "description": "Optional path to a policy JSON (allowTools, allowAddresses, allowHosts, maxValueEth) for yusa_check_tool_call.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "filepath"
+        }
+      ]
+    }
+  ]
+}
