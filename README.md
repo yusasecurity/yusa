@@ -46,6 +46,8 @@ curl -s $URL | node src/cli.ts
 | `yusa_fence` | before putting that text into a prompt | the text in a random-nonce tag, invisible characters stripped |
 | `yusa_check_tool_call` | before any call that moves value or sends data out | `allow` / `block` with reasons |
 
+Listed in the [MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.yusasecurity/yusa) as `io.github.yusasecurity/yusa`. For Claude Desktop, download [`yusa.mcpb`](https://github.com/yusasecurity/yusa/releases/latest/download/yusa.mcpb) and open it. Or run it straight from a clone:
+
 ```bash
 git clone https://github.com/yusasecurity/yusa
 claude mcp add yusa -- node /path/to/yusa/mcp/yusa-mcp.mjs
