@@ -7,18 +7,17 @@ permissions:
   contents: read
 jobs:
   scan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./
         with:
-          paths: README.md skills
-          changed-only: "false"
+          exclude: action/test
 
   self-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: clean
         uses: ./
         with:

@@ -21,6 +21,9 @@ inputs:
   changed-only:
     description: On pull_request and push, scan only the files that changed. Set false to scan everything.
     default: "true"
+  exclude:
+    description: Path prefixes to skip, space or comma separated (e.g. test fixtures that contain attacks on purpose).
+    default: ""
 
 outputs:
   blocked:
@@ -44,4 +47,5 @@ runs:
         INPUT_MODE: ${{ inputs.mode }}
         INPUT_FAIL-ON: ${{ inputs.fail-on }}
         INPUT_CHANGED-ONLY: ${{ inputs.changed-only }}
+        INPUT_EXCLUDE: ${{ inputs.exclude }}
       run: node "$GITHUB_ACTION_PATH/action/yusa-action.mjs"
