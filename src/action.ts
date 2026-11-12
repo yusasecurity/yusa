@@ -13,6 +13,7 @@ const NAMES = new Set([".cursorrules", ".windsurfrules", ".clinerules", "AGENTS"
 const MODE = env("INPUT_MODE", "skill") === "input" ? "input" : "skill";
 const FAIL_ON = (["block", "review", "never"].includes(env("INPUT_FAIL-ON")) ? env("INPUT_FAIL-ON") : "block") as "block" | "review" | "never";
 const CHANGED_ONLY = env("INPUT_CHANGED-ONLY", "true") !== "false";
+const EXCLUDE = env("INPUT_EXCLUDE").split(/[\s,]+/).filter(Boolean).map((p) => p.replace(/^\.\//, "").replace(/\/$/, ""));
 const MAX_BYTES = 2_000_000;
 const SKIP_DIRS = new Set([".git", "node_modules", "dist", "build", "vendor", ".next"]);
 
@@ -83,6 +84,7 @@ const files = [...new Set(all)]
   .map((f) => relative(ROOT, f))
   .filter((f) => !f.startsWith(".."))
   .filter((f) => !changed || changed.includes(f))
+  .filter((f) => !EXCLUDE.some((x) => f === x || f.startsWith(x + "/")))
   .sort();
 
 const rows: { file: string; r: ScanResult; lines: Map<string, number> }[] = [];

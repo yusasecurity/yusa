@@ -477,6 +477,7 @@ const FAIL_ON = [
 	"never"
 ].includes(env("INPUT_FAIL-ON")) ? env("INPUT_FAIL-ON") : "block";
 const CHANGED_ONLY = env("INPUT_CHANGED-ONLY", "true") !== "false";
+const EXCLUDE = env("INPUT_EXCLUDE").split(/[\s,]+/).filter(Boolean).map((p) => p.replace(/^\.\//, "").replace(/\/$/, ""));
 const MAX_BYTES = 2e6;
 const SKIP_DIRS = /* @__PURE__ */ new Set([
 	".git",
@@ -571,7 +572,7 @@ const cell = (s) => s.replace(/[|`\r\n]/g, " ").slice(0, 160);
 const changed = CHANGED_ONLY ? changedFiles() : null;
 const all = [];
 for (const p of PATHS) walk(join(ROOT, p), all);
-const files = [...new Set(all)].map((f) => relative(ROOT, f)).filter((f) => !f.startsWith("..")).filter((f) => !changed || changed.includes(f)).sort();
+const files = [...new Set(all)].map((f) => relative(ROOT, f)).filter((f) => !f.startsWith("..")).filter((f) => !changed || changed.includes(f)).filter((f) => !EXCLUDE.some((x) => f === x || f.startsWith(x + "/"))).sort();
 const rows = [];
 for (const file of files) {
 	const text = readFileSync(join(ROOT, file), "utf8");

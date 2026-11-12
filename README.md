@@ -80,6 +80,34 @@ Other clients:
 
 The tools are advisory: the model decides whether to call them. For a hard stop, call `checkToolCall` in your own code before the tool runs.
 
+## GitHub Action
+
+Fails a pull request that adds hidden or obfuscated instructions to anything an agent reads: prompts, `SKILL.md`, `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, docs. Findings show up as annotations on the changed lines and in the job summary, with secrets masked.
+
+```yaml
+# .github/workflows/yusa.yml
+on: [pull_request]
+permissions:
+  contents: read
+jobs:
+  yusa:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: yusasecurity/yusa@v0.3.0
+```
+
+| Input | Default | |
+|---|---|---|
+| `paths` | `.` | files or directories to scan |
+| `extensions` | `md,mdc,mdx,txt,prompt` | `AGENTS`, `CLAUDE`, `.cursorrules`, `.windsurfrules`, `.clinerules` are always included |
+| `changed-only` | `true` | on PRs and pushes, scan only changed files |
+| `exclude` | | path prefixes to skip, e.g. test fixtures that contain attacks on purpose |
+| `mode` | `skill` | `skill` treats quoted and code-fenced text as a mention; `input` counts every line |
+| `fail-on` | `block` | `block`, `review` or `never` |
+
+Outputs: `blocked`, `review`, `scanned`. Runs on the runner's Node, no install step, no network, no token.
+
 ## Aeon skill pack
 
 `skills/yusa-skill-audit` scans every `SKILL.md`, `soul/` and `STRATEGY.md` in an [Aeon](https://www.aeon.fun) instance for hidden or obfuscated injection, and alerts only on new or changed hits. Keyless, read-only, no network. `yusa.mjs` is the engine bundled into one 15 KB file.
