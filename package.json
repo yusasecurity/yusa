@@ -1,7 +1,7 @@
 {
   "name": "yusa",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,8 @@
     "test": "node --test src/engine/*.test.ts",
     "scan": "node src/cli.ts",
     "build:skill": "rolldown src/pack-cli.ts --platform node --format esm --file skills/yusa-skill-audit/yusa.mjs",
-    "build:mcp": "rolldown src/mcp.ts --platform node --format esm --file mcp/yusa-mcp.mjs"
+    "build:mcp": "rolldown src/mcp.ts --platform node --format esm --file mcp/yusa-mcp.mjs",
+    "build:action": "rolldown src/action.ts --platform node --format esm --file action/yusa-action.mjs"
   },
   "dependencies": {
     "@fontsource-variable/archivo": "^5.3.0",

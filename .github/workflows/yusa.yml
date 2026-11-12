@@ -1,0 +1,39 @@
+name: yusa
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          paths: README.md skills
+          changed-only: "false"
+
+  self-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: clean
+        uses: ./
+        with:
+          paths: action/test/clean.md
+          changed-only: "false"
+      - id: hidden
+        uses: ./
+        with:
+          paths: action/test/hidden-tag.md
+          changed-only: "false"
+          fail-on: never
+      - name: hidden fixture must block, clean must not
+        env:
+          CLEAN: ${{ steps.clean.outputs.blocked }}
+          HIDDEN: ${{ steps.hidden.outputs.blocked }}
+        run: |
+          echo "clean=$CLEAN hidden=$HIDDEN"
+          test "$CLEAN" = 0 && test "$HIDDEN" = 1

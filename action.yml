@@ -1,0 +1,47 @@
+name: YUSA prompt-injection scan
+description: Fail a PR that adds hidden or obfuscated instructions to prompts, skills, rules or docs an AI agent reads.
+author: yusasecurity
+branding:
+  icon: eye
+  color: orange
+
+inputs:
+  paths:
+    description: Files or directories to scan, space or comma separated.
+    default: "."
+  extensions:
+    description: File extensions to scan. AGENTS, CLAUDE, .cursorrules, .windsurfrules and .clinerules are always included.
+    default: "md,mdc,mdx,txt,prompt"
+  mode:
+    description: "skill: quoted and code-fenced text counts as a mention (docs, SKILL.md). input: every line counts (raw untrusted text)."
+    default: "skill"
+  fail-on:
+    description: "block, review or never."
+    default: "block"
+  changed-only:
+    description: On pull_request and push, scan only the files that changed. Set false to scan everything.
+    default: "true"
+
+outputs:
+  blocked:
+    description: Number of files with a block verdict.
+    value: ${{ steps.scan.outputs.blocked }}
+  review:
+    description: Number of files with a review verdict.
+    value: ${{ steps.scan.outputs.review }}
+  scanned:
+    description: Number of files scanned.
+    value: ${{ steps.scan.outputs.scanned }}
+
+runs:
+  using: composite
+  steps:
+    - id: scan
+      shell: bash
+      env:
+        INPUT_PATHS: ${{ inputs.paths }}
+        INPUT_EXTENSIONS: ${{ inputs.extensions }}
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_FAIL-ON: ${{ inputs.fail-on }}
+        INPUT_CHANGED-ONLY: ${{ inputs.changed-only }}
+      run: node "$GITHUB_ACTION_PATH/action/yusa-action.mjs"
