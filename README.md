@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: yusasecurity/yusa@v0.3.2
+      - uses: yusasecurity/yusa@v0.3.3
 ```
 
 | Input | Default | |
@@ -126,19 +126,15 @@ npm run build:mcp      # rebuild mcp/yusa-mcp.mjs
 
 ## Benchmark
 
-Scored on [deepset/prompt-injections](https://huggingface.co/datasets/deepset/prompt-injections) (Apache-2.0, English and German). Rules were tuned on the train split only. The test split is a holdout. "Detected" means the verdict was review or block.
+Scored on three public datasets. Rules were tuned on train splits only (deepset and Gandalf). Every number below is a test split that was never used for tuning. "Detected" means the verdict was review or block.
 
-| split | detection | false positives | precision |
+| test set | detection | false positives | precision |
 |---|---|---|---|
-| train (tuned on) | 49.3% (100/203) | 0.0% (0/343) | 100% |
-| **test (holdout)** | **33.3% (20/60)** | **0.0% (0/56)** | **100%** |
+| [deepset/prompt-injections](https://huggingface.co/datasets/deepset/prompt-injections) (Apache-2.0, EN + DE) | 35.0% (21/60) | 0.0% (0/56) | 100% |
+| [`jackhhao/jailbreak-classification`](https://huggingface.co/datasets/jackhhao/jailbreak-classification) (Apache-2.0) | 69.1% (96/139) | 0.8% (1/123) | 99.0% |
+| [Lakera/gandalf_ignore_instructions](https://huggingface.co/datasets/Lakera/gandalf_ignore_instructions) (MIT, injections only) | 72.3% (81/112) | n/a | n/a |
 
-Two more sets, never used for tuning:
-
-| dataset | detection | false positives | precision |
-|---|---|---|---|
-| [jackhhao/jailbreak-classification](https://huggingface.co/datasets/jackhhao/jailbreak-classification) test (Apache-2.0) | 68.3% (95/139) | 0.8% (1/123) | 99.0% |
-| [Lakera/gandalf_ignore_instructions](https://huggingface.co/datasets/Lakera/gandalf_ignore_instructions) test (MIT, injections only) | 55.4% (62/112) | n/a | n/a |
+The jailbreak set was never tuned on at all. For comparison, train-split detection: deepset 50.2%, Gandalf 70.0%.
 
 Reproduce with `npm run bench`. YUSA is tuned to avoid false positives, so it misses more than it flags wrongly. Most misses are roleplay setups ("two actors in a film about a robbery") and plain task requests ("generate SQL code") that the dataset labels as injections. Patterns cannot tell those apart from normal use, so the Gate's policy checks are the backstop.
 

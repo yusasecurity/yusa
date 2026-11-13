@@ -374,6 +374,27 @@ const RULES = [
 		why: "Asks what came before in the prompt"
 	},
 	{
+		id: "OVR-012",
+		category: "override",
+		weight: 45,
+		re: /\b(?:ignor(?:e|en|ing)|disregard(?:ing)?|forget(?:ting)?|discard|delete|drop)\s+(?:about\s+)?(?:(?:all|any|of|the|your|my|these|those|previous(?:ly)?|prior|above|last|earlier|preceding|original|initial|secret)\s+){1,3}(?:in?st?r?u?ctions?|instrutions?|directions?|directives?|requests?|rules|prompts?|guidelines|guides?|techniques|commands)\b|\b(?:ignore|forget)\s+(?:in?st?r?u?ctions|directions|prompt)\s+and\b|\b(?:don'?t|do not|stop) follow(?:ing)?\s+(?:any\s+|the\s+|your\s+)?(?:previous|prior|earlier|above|original)\s+(?:instructions|directions|requests|rules)\b/,
+		why: "Tells the agent to drop its instructions"
+	},
+	{
+		id: "OVR-013",
+		category: "override",
+		weight: 40,
+		re: /\b(?:here are|these are|i (?:give|am giving|have) you|consider|accept|take|follow)\s+(?:some\s+|these\s+|the\s+)?new\s+(?:instructions|guidelines|rules|directives|orders)\b|\boverrides?\s+(?:all\s+)?(?:previous|prior|your|earlier)\s+in\w*ions\b|\b(?:previous|prior)\s+instructions\s+(?:are|were)\s+(?:false|void|cancell?ed|wrong|invalid|now)\b|\binstructions?\s+(?:given to you\s+)?should be (?:ignored|forgotten)\b/,
+		why: "Declares new instructions that replace the old ones"
+	},
+	{
+		id: "LEAK-005",
+		category: "prompt-leak",
+		weight: 40,
+		re: /\b(?:repeat|list|quote|recite|reveal|respond with|spell out|summari[sz]e|translate)\s+(?:all\s+|every\s+|each\s+)?(?:of\s+)?(?:your\s+|my\s+|the\s+)?(?:previous\s+|prior\s+|initials?\s+|secret\s+|preserved\s+|last\s+|hidden\s+|original\s+)?(?:words in your\s+)?(?:instructions?|directions|guidelines|prompt)\b(?!\s+(?:below|for (?:the|each|every|installing|setup)))|\bwhat (?:instructions?|rules|directions|guidelines)\s+(?:are|were|is|have)\s+(?:you|u|been|provided|given)\b|\bwhat (?:are|were|was) (?:your|the) (?:last\s+(?:but one\s+)?)?(?:instructions?|rules|directions)\b|\binstructions?\s+(?:you (?:got|received|were given)|given to you)\b/,
+		why: "Asks the agent to reveal its instructions"
+	},
+	{
 		id: "LEAK-003",
 		category: "prompt-leak",
 		weight: 40,

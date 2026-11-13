@@ -7,7 +7,7 @@ import { checkToolCall, type Policy } from "./engine/policy.ts";
 // MCP server over stdio (newline-delimited JSON-RPC 2.0). No dependencies, no network.
 // Optional: YUSA_POLICY=/path/policy.json supplies the default policy for yusa_check_tool_call.
 
-const VERSION = "0.3.2";
+const VERSION = "0.3.3";
 const PROTOCOLS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
 const MAX_INPUT = 1_000_000;
 
