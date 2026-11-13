@@ -133,6 +133,13 @@ Scored on [deepset/prompt-injections](https://huggingface.co/datasets/deepset/pr
 | train (tuned on) | 49.3% (100/203) | 0.0% (0/343) | 100% |
 | **test (holdout)** | **33.3% (20/60)** | **0.0% (0/56)** | **100%** |
 
+Two more sets, never used for tuning:
+
+| dataset | detection | false positives | precision |
+|---|---|---|---|
+| [jackhhao/jailbreak-classification](https://huggingface.co/datasets/jackhhao/jailbreak-classification) test (Apache-2.0) | 68.3% (95/139) | 0.8% (1/123) | 99.0% |
+| [Lakera/gandalf_ignore_instructions](https://huggingface.co/datasets/Lakera/gandalf_ignore_instructions) test (MIT, injections only) | 55.4% (62/112) | n/a | n/a |
+
 Reproduce with `npm run bench`. YUSA is tuned to avoid false positives, so it misses more than it flags wrongly. Most misses are roleplay setups ("two actors in a film about a robbery") and plain task requests ("generate SQL code") that the dataset labels as injections. Patterns cannot tell those apart from normal use, so the Gate's policy checks are the backstop.
 
 ## Limits
