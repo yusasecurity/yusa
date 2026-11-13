@@ -12,4 +12,11 @@ brand/
 scripts/ape-sheet.mjs
 scripts/brand.mjs
 scripts/banner.mjs
+
+# token/launch files stay local; Vercel deploys them from disk
+public/token.json
+public/token-logo.png
+scripts/set-ca.mjs
+token-metadata.json
+.env.local
 ape-sheet.png

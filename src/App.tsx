@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ThreeDButton } from "./components/ThreeDButton.tsx";
 import { XRay } from "./components/XRay.tsx";
 import { Mark } from "./components/Mark.tsx";
+import { CaBar } from "./components/CaBar.tsx";
 import { scan, fence, type ScanResult, type Verdict } from "./engine/scan.ts";
 import { checkToolCall, type Policy, type ToolCall } from "./engine/policy.ts";
 import { SAMPLES } from "./engine/samples.ts";
@@ -95,6 +96,7 @@ function Hero() {
               {r.stats.tagChars} invisible characters · score {r.score}/100
             </span>
           </div>
+          <CaBar />
         </div>
       </div>
     </section>
