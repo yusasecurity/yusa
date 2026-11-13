@@ -8,12 +8,12 @@
     "source": "github"
   },
   "websiteUrl": "https://yusasecurity.xyz",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "packages": [
     {
       "registryType": "mcpb",
-      "identifier": "https://github.com/yusasecurity/yusa/releases/download/v0.3.1/yusa.mcpb",
-      "fileSha256": "0ec1b584e87ccd626ecf973d121a8698454c3c303b91fdef1d6d59be3005c819",
+      "identifier": "https://github.com/yusasecurity/yusa/releases/download/v0.3.2/yusa.mcpb",
+      "fileSha256": "9f03e2e36727e3cc974ecd168fda762d778fcbd92da52782f01390d7243c0151",
       "transport": {
         "type": "stdio"
       },

@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: yusasecurity/yusa@v0.3.1
+      - uses: yusasecurity/yusa@v0.3.2
 ```
 
 | Input | Default | |
@@ -123,6 +123,17 @@ npm run build          # site -> dist/
 npm run build:skill    # rebuild skills/yusa-skill-audit/yusa.mjs
 npm run build:mcp      # rebuild mcp/yusa-mcp.mjs
 ```
+
+## Benchmark
+
+Scored on [deepset/prompt-injections](https://huggingface.co/datasets/deepset/prompt-injections) (Apache-2.0, English and German). Rules were tuned on the train split only. The test split is a holdout. "Detected" means the verdict was review or block.
+
+| split | detection | false positives | precision |
+|---|---|---|---|
+| train (tuned on) | 49.3% (100/203) | 0.0% (0/343) | 100% |
+| **test (holdout)** | **33.3% (20/60)** | **0.0% (0/56)** | **100%** |
+
+Reproduce with `npm run bench`. YUSA is tuned to avoid false positives, so it misses more than it flags wrongly. Most misses are roleplay setups ("two actors in a film about a robbery") and plain task requests ("generate SQL code") that the dataset labels as injections. Patterns cannot tell those apart from normal use, so the Gate's policy checks are the backstop.
 
 ## Limits
 

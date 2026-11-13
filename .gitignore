@@ -20,3 +20,6 @@ scripts/set-ca.mjs
 token-metadata.json
 .env.local
 ape-sheet.png
+public/yusa-demo.mp4
+public/dex/
+bench/data/

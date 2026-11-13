@@ -302,6 +302,146 @@ const RULES = [
 		weight: 20,
 		re: /\b(?:decode|base64 ?decode|rot13|reverse) (?:this|the following|and (?:follow|execute|run|obey))\b/,
 		why: "Asks the agent to decode then obey"
+	},
+	{
+		id: "OVR-006",
+		category: "override",
+		weight: 60,
+		re: /\b(?:forget|ignore|disregard)\s+(?:about\s+)?(?:everything|all(?:\s+(?:of\s+)?(?:that|this|the above|previous|preceding|prior|earlier|assignments|tasks|orders|commands))?|(?:the\s+)?above|what (?:i|we) (?:said|discussed|told you))\b/,
+		why: "Blanket reset: forget/ignore everything or the above"
+	},
+	{
+		id: "OVR-007",
+		category: "override",
+		weight: 55,
+		re: /\b(?:ignore|disregard|forget)\s+(?:all\s+)?(?:the\s+)?(?:preceding|previous|prior|above|earlier)\s+(?:orders|commands|tasks|assignments|information|input|text)\b/,
+		why: "Drops earlier orders or tasks"
+	},
+	{
+		id: "OVR-008",
+		category: "override",
+		weight: 50,
+		re: /\b(?:leave|put|set)\s+(?:all\s+)?(?:the\s+)?(?:previous|prior|earlier)\s+(?:information|tasks?|instructions?)\s+(?:behind|aside)|\bremove\s+all\s+(?:the\s+)?(?:previous|prior)\s+(?:tasks|instructions|information)\b|\bstart\s+(?:over|from\s+(?:the\s+)?(?:front|scratch|beginning))\b.{0,40}\b(?:new|task)\b/,
+		why: "Asks to discard prior context and start a new task"
+	},
+	{
+		id: "OVR-009",
+		category: "override",
+		weight: 35,
+		re: /\b(?:very good|well done|good job|great job|excellent(?: performance)?|simply great|wow|perfect|congratulations[^.!]{0,30}|that is (?:done|enough)|that'?s (?:done|enough))\b[^\n]{0,80}\bnow\b[^\n]{0,40}\b(?:new|another|further|next|following)\s+(?:task|challenge|assignment|question)s?\b|\b(?:that is|that'?s) enough\.?\s+now\b/,
+		why: "Praise, then pivot to a new task (classic injection opener)"
+	},
+	{
+		id: "OVR-010",
+		category: "override",
+		weight: 40,
+		re: /\b(?:attention|stop)\s*[-!:]+\s*(?:stop|attention)?\s*[-!:]*\s*i\s+(?:urgently\s+)?need\b/,
+		why: "Urgent interrupt to hijack the current task"
+	},
+	{
+		id: "ROLE-005",
+		category: "role-hijack",
+		weight: 35,
+		re: /\b(?:now|okay|ok)[.,]?\s+you are\s+(?!(?:done|ready|right|correct|welcome)\b)[a-z]/,
+		why: "Assigns the agent a new identity mid-conversation"
+	},
+	{
+		id: "ROLE-006",
+		category: "role-hijack",
+		weight: 30,
+		re: /\b(?:pretend|imagine)\s+(?:that\s+)?you(?:'re| are)\s+(?:an?\s+)?(?:evil|malicious|unrestricted|rogue|hacker|criminal)\b/,
+		why: "Roleplay as a malicious persona"
+	},
+	{
+		id: "ROLE-007",
+		category: "role-hijack",
+		weight: 30,
+		re: /\bi want you to act as (?:an?\s+)?(?:linux|terminal|console|shell|sql|javascript|python|interpreter|debater|interviewer|travel guide|storyteller)\b/,
+		why: "Reassigns the agent to a scripted persona"
+	},
+	{
+		id: "OVR-011",
+		category: "override",
+		weight: 35,
+		re: /\b(?:that is|that'?s)\s+(?:done|finished|complete)\.?\s+now\b|\bnow (?:i have|here is|comes?) (?:a|an|another|my)\s+(?:great\s+|real\s+|new\s+)*(?:new\s+)?(?:challenge|task|assignment)\s+for you\b|\bnow (?:follow|come)s?\s+(?:new|further|the real)\s+(?:tasks|instructions|orders)\b/,
+		why: "Closes the current task and pivots to a new one"
+	},
+	{
+		id: "LEAK-004",
+		category: "prompt-leak",
+		weight: 40,
+		re: /\bwhat (?:was|is) written (?:at the (?:beginning|start|top)|above|before)\b|\b(?:repeat|print)\s+(?:the\s+)?(?:first|initial)\s+(?:line|lines|message|sentence)s?\s+(?:of|in)\s+(?:this|your|the)\s+(?:prompt|conversation)\b/,
+		why: "Asks what came before in the prompt"
+	},
+	{
+		id: "LEAK-003",
+		category: "prompt-leak",
+		weight: 40,
+		re: /\b(?:show|print|display|output|give)\s+(?:me\s+)?(?:all\s+)?(?:of\s+)?(?:your|the)\s+(?:entire\s+|whole\s+|full\s+|complete\s+)?(?:prompt(?:\s*text)?|instructions|system message)\b/,
+		why: "Asks for the full prompt text"
+	},
+	{
+		id: "DE-OVR-001",
+		category: "override",
+		weight: 60,
+		re: /\b(?:vergiss|vergessen sie|ignoriere|ignorieren sie|missachte)\b[^.\n]{0,40}\b(?:alle[ns]?|die|deine|ihre)?\s*(?:vorherigen|vorangehenden|obigen|bisherigen|früheren|vorigen)?\s*(?:anweisungen|aufgaben|aufträge|befehle|angaben|informationen|instruktionen|regeln)\b/,
+		why: "German: drop previous instructions or tasks"
+	},
+	{
+		id: "DE-OVR-002",
+		category: "override",
+		weight: 55,
+		re: /\b(?:vergiss|vergessen sie)\s+(?:alles|das alles|all das)\b/,
+		why: "German: forget everything"
+	},
+	{
+		id: "DE-OVR-003",
+		category: "override",
+		weight: 35,
+		re: /\b(?:sehr gut|gut gemacht|super|toll|fantastisch|hervorragend|ausgezeichnet|perfekt|das genügt|das reicht|okay)\b[^\n]{0,100}\b(?:jetzt|nun)\b[^\n]{0,60}\b(?:neue[nr]?|weitere|folgende[nr]?|nächste)\s+(?:aufgabe|aufgaben|herausforderung|frage)\b/,
+		why: "German: praise, then pivot to a new task"
+	},
+	{
+		id: "DE-OVR-005",
+		category: "override",
+		weight: 55,
+		re: /\b(?:die\s+)?(?:obigen|vorherigen|bisherigen)\s+(?:ausführungen|anweisungen|aufgaben|informationen)\s+(?:ignorieren|vergessen)\b|\b(?:alle\s+)?(?:vorherigen|vorangegangenen|bisherigen)\s+(?:informationen|aufgaben|anweisungen)\s+(?:hinter sich|aus dem kopf)\b/,
+		why: "German: discard the earlier text or tasks"
+	},
+	{
+		id: "DE-OVR-006",
+		category: "override",
+		weight: 35,
+		re: /\b(?:das ist|ist)\s+erledigt\.?\s+(?:\w+\s+){0,2}(?:nun|jetzt)\b|\b(?:nun|jetzt)\s+folgen\s+(?:neue|weitere)\s+(?:anweisungen|aufgaben|aufträge)\b|\b(?:jetzt|nun)\s+habe ich\s+(?:eine|einen)\s+(?:\w+\s+){0,2}neue\s+(?:herausforderung|aufgabe)\b/,
+		why: "German: closes the task and pivots to a new one"
+	},
+	{
+		id: "DE-OVR-004",
+		category: "override",
+		weight: 40,
+		re: /\b(?:achtung|stopp?)\s*[-!:]+\s*(?:stopp?|achtung)?\s*[-!:]*\s*ich\s+(?:benötige|brauche)\b/,
+		why: "German: urgent interrupt"
+	},
+	{
+		id: "DE-ROLE-001",
+		category: "role-hijack",
+		weight: 35,
+		re: /\b(?:jetzt|nun)\s+bist\s+du\b|\bstell\s+dir\s+vor,?\s+du\s+bist\b|\bdu\s+bist\s+(?:jetzt|nun|ab sofort)\b/,
+		why: "German: assigns a new identity"
+	},
+	{
+		id: "DE-ROLE-002",
+		category: "role-hijack",
+		weight: 30,
+		re: /\bich möchte,? dass (?:sie|du) als\b[^.\n]{0,60}\b(?:fungieren|fungierst|agieren|agierst|auftreten)\b/,
+		why: "German: reassigns the agent to a persona"
+	},
+	{
+		id: "DE-LEAK-001",
+		category: "prompt-leak",
+		weight: 40,
+		re: /\b(?:zeige?|gib)\s+(?:mir\s+)?(?:alle\s+)?(?:deine[nr]?|ihre[nr]?|den)\s+(?:gesamten\s+|ganzen\s+|kompletten\s+)?(?:prompt(?:-?text)?|anweisungen|systemnachricht)\b|\bkopie des vollständigen prompt/,
+		why: "German: asks for the prompt text"
 	}
 ];
 const SECRETS = [
@@ -533,7 +673,7 @@ function checkToolCall(call, policy) {
 	};
 }
 // src/mcp.ts
-const VERSION = "0.3.1";
+const VERSION = "0.3.2";
 const PROTOCOLS = [
 	"2025-11-25",
 	"2025-06-18",
