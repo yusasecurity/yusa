@@ -1,16 +1,21 @@
-export type Layer = "visible" | "tag-smuggled" | "base64" | "html-hidden";
+export type Layer = "visible" | "tag-smuggled" | "vs-smuggled" | "base64" | "html-hidden";
 
 export interface Unmasked {
   layers: { layer: Layer; text: string }[];
   invisibleCount: number;
   bidiCount: number;
   tagCount: number;
+  /** Longest run of variation selectors (2+ can carry bytes). */
+  vsRun: number;
   mixedScriptWords: string[];
 }
 
 const ZERO_WIDTH = /[\u200B-\u200D\u2060-\u2064\uFEFF\u00AD\u180E]/g;
 const BIDI = /[\u202A-\u202E\u2066-\u2069\u200E\u200F]/g;
 const TAG = /[\u{E0000}-\u{E007F}]/gu;
+// Variation selectors. Emoji smuggling maps each byte to one: 0-15 -> U+FE00-FE0F, 16-255 -> U+E0100-E01EF.
+const VS_RUN = /(?:[\uFE00-\uFE0F]|[\u{E0100}-\u{E01EF}]){2,}/gu;
+const VS_SUPP = /[\u{E0100}-\u{E01EF}]/gu;
 
 export const CONFUSABLE: Record<string, string> = {
   "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "у": "y", "х": "x", "і": "i", "ј": "j", "ѕ": "s",
@@ -31,9 +36,22 @@ export function decodeTags(s: string): string {
   return out;
 }
 
+export function decodeVariationSelectors(s: string): string {
+  const out: string[] = [];
+  for (const run of s.matchAll(VS_RUN)) {
+    const bytes = Array.from(run[0], (c) => {
+      const cp = c.codePointAt(0)!;
+      return cp <= 0xfe0f ? cp - 0xfe00 : cp - 0xe0100 + 16;
+    });
+    const text = new TextDecoder("utf-8", { fatal: false }).decode(new Uint8Array(bytes)).replace(/[^\x20-\x7e\n\t\u00a0-\uffff]/g, "");
+    if (text.trim()) out.push(text);
+  }
+  return out.join("\n");
+}
+
 /** Canonical form the rules match against: NFKC, invisibles stripped, confusables folded, lowercase. */
 export function canon(s: string): string {
-  let t = s.normalize("NFKC").replace(ZERO_WIDTH, "").replace(BIDI, "").replace(TAG, "");
+  let t = s.normalize("NFKC").replace(ZERO_WIDTH, "").replace(BIDI, "").replace(TAG, "").replace(VS_SUPP, "");
   t = Array.from(t, (c) => CONFUSABLE[c] ?? c).join("").toLowerCase();
   // "i g n o r e" / "i.g.n.o.r.e" spacing evasion
   t = t.replace(/\b(?:[a-z][\s._\-*]){3,}[a-z]\b/g, (m) => m.replace(/[\s._\-*]/g, ""));
@@ -70,6 +88,8 @@ export function unmask(input: string): Unmasked {
   const layers: Unmasked["layers"] = [{ layer: "visible", text: input }];
   const tagText = decodeTags(input);
   if (tagText) layers.push({ layer: "tag-smuggled", text: tagText });
+  const vsText = decodeVariationSelectors(input);
+  if (vsText) layers.push({ layer: "vs-smuggled", text: vsText });
   for (const t of htmlHidden(input)) layers.push({ layer: "html-hidden", text: t });
   for (const t of decodeBase64Blobs(input)) layers.push({ layer: "base64", text: t });
 
@@ -83,6 +103,7 @@ export function unmask(input: string): Unmasked {
     invisibleCount: (input.match(ZERO_WIDTH) ?? []).length,
     bidiCount: (input.match(BIDI) ?? []).length,
     tagCount: (input.match(TAG) ?? []).length,
+    vsRun: Math.max(0, ...Array.from(input.matchAll(VS_RUN), (m) => [...m[0]].length)),
     mixedScriptWords,
   };
 }

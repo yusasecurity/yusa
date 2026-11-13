@@ -94,6 +94,8 @@ export function scan(input: string, opts: ScanOptions = {}): ScanResult {
 
   if (u.tagCount > 0)
     findings.push({ id: "OBF-TAG", category: "obfuscation", layer: "tag-smuggled", weight: 40, why: `${u.tagCount} invisible Unicode TAG chars (ASCII smuggling)`, match: "U+E00xx" });
+  if (u.vsRun >= 2)
+    findings.push({ id: "OBF-VS", category: "obfuscation", layer: "vs-smuggled", weight: 40, why: `${u.vsRun} variation selectors in a row (emoji smuggling: one hidden byte each)`, match: "U+FE0x/U+E01xx" });
   if (u.bidiCount > 0)
     findings.push({ id: "OBF-BIDI", category: "obfuscation", layer: "visible", weight: 20, why: `${u.bidiCount} bidi override chars (text renders differently than it reads)`, match: "U+202x" });
   if (u.invisibleCount >= 3)
@@ -120,7 +122,9 @@ export function scan(input: string, opts: ScanOptions = {}): ScanResult {
 /** Spotlighting: wrap untrusted content in a random-nonce fence so the model can tell data from instructions. */
 export function fence(untrusted: string, source = "external"): string {
   const nonce = Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => b.toString(16).padStart(2, "0")).join("");
-  const clean = untrusted.normalize("NFKC").replace(/[\u200B-\u200D\u2060-\u2064\uFEFF\u202A-\u202E\u2066-\u2069]|[\u{E0000}-\u{E007F}]/gu, "");
+  const clean = untrusted
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\u2060-\u2064\uFEFF\u202A-\u202E\u2066-\u2069]|[\u{E0000}-\u{E007F}]|[\u{E0100}-\u{E01EF}]|(?:[\uFE00-\uFE0F]){2,}/gu, "");
   return [
     `<untrusted_${nonce} source="${source.replace(/"/g, "")}">`,
     clean.replaceAll(`untrusted_${nonce}`, "untrusted_x"),

@@ -29,10 +29,17 @@ jobs:
           paths: action/test/hidden-tag.md
           changed-only: "false"
           fail-on: never
-      - name: hidden fixture must block, clean must not
+      - id: hidden-vs
+        uses: ./
+        with:
+          paths: action/test/hidden-vs.md
+          changed-only: "false"
+          fail-on: never
+      - name: hidden fixtures must block, clean must not
         env:
           CLEAN: ${{ steps.clean.outputs.blocked }}
           HIDDEN: ${{ steps.hidden.outputs.blocked }}
+          HIDDEN_VS: ${{ steps.hidden-vs.outputs.blocked }}
         run: |
-          echo "clean=$CLEAN hidden=$HIDDEN"
-          test "$CLEAN" = 0 && test "$HIDDEN" = 1
+          echo "clean=$CLEAN hidden=$HIDDEN hidden_vs=$HIDDEN_VS"
+          test "$CLEAN" = 0 && test "$HIDDEN" = 1 && test "$HIDDEN_VS" = 1

@@ -1,10 +1,15 @@
 import { readFileSync } from "node:fs";
-import { scan } from "./engine/scan.ts";
+import { maskSecrets, scan } from "./engine/scan.ts";
 
 // Usage: node src/cli.ts "<text>" | node src/cli.ts -f file | echo text | node src/cli.ts
 const args = process.argv.slice(2);
 const text = args[0] === "-f" ? readFileSync(args[1], "utf8") : args.length ? args.join(" ") : readFileSync(0, "utf8");
-const r = scan(text);
+const raw = scan(text);
+const r = {
+  ...raw,
+  findings: raw.findings.map((f) => ({ ...f, match: maskSecrets(f.match) })),
+  hiddenText: raw.hiddenText.map((h) => ({ ...h, text: maskSecrets(h.text) })),
+};
 
 if (process.stdout.isTTY) {
   const color = { allow: "\x1b[32m", review: "\x1b[33m", block: "\x1b[31m" }[r.verdict];

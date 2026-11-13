@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: yusasecurity/yusa@v0.3.0
+      - uses: yusasecurity/yusa@v0.3.1
 ```
 
 | Input | Default | |

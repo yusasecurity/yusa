@@ -5,6 +5,8 @@ import { createInterface } from "node:readline";
 const ZERO_WIDTH = /[\u200B-\u200D\u2060-\u2064\uFEFF\u00AD\u180E]/g;
 const BIDI = /[\u202A-\u202E\u2066-\u2069\u200E\u200F]/g;
 const TAG = /[\u{E0000}-\u{E007F}]/gu;
+const VS_RUN = /(?:[\uFE00-\uFE0F]|[\u{E0100}-\u{E01EF}]){2,}/gu;
+const VS_SUPP = /[\u{E0100}-\u{E01EF}]/gu;
 const CONFUSABLE = {
 	"а": "a",
 	"е": "e",
@@ -53,9 +55,21 @@ function decodeTags(s) {
 	}
 	return out;
 }
+function decodeVariationSelectors(s) {
+	const out = [];
+	for (const run of s.matchAll(VS_RUN)) {
+		const bytes = Array.from(run[0], (c) => {
+			const cp = c.codePointAt(0);
+			return cp <= 65039 ? cp - 65024 : cp - 917760 + 16;
+		});
+		const text = new TextDecoder("utf-8", { fatal: false }).decode(new Uint8Array(bytes)).replace(/[^\x20-\x7e\n\t\u00a0-\uffff]/g, "");
+		if (text.trim()) out.push(text);
+	}
+	return out.join("\n");
+}
 /** Canonical form the rules match against: NFKC, invisibles stripped, confusables folded, lowercase. */
 function canon(s) {
-	let t = s.normalize("NFKC").replace(ZERO_WIDTH, "").replace(BIDI, "").replace(TAG, "");
+	let t = s.normalize("NFKC").replace(ZERO_WIDTH, "").replace(BIDI, "").replace(TAG, "").replace(VS_SUPP, "");
 	t = Array.from(t, (c) => CONFUSABLE[c] ?? c).join("").toLowerCase();
 	t = t.replace(/\b(?:[a-z][\s._\-*]){3,}[a-z]\b/g, (m) => m.replace(/[\s._\-*]/g, ""));
 	return t.replace(/\s+/g, " ");
@@ -88,6 +102,11 @@ function unmask(input) {
 		layer: "tag-smuggled",
 		text: tagText
 	});
+	const vsText = decodeVariationSelectors(input);
+	if (vsText) layers.push({
+		layer: "vs-smuggled",
+		text: vsText
+	});
 	for (const t of htmlHidden(input)) layers.push({
 		layer: "html-hidden",
 		text: t
@@ -102,6 +121,7 @@ function unmask(input) {
 		invisibleCount: (input.match(ZERO_WIDTH) ?? []).length,
 		bidiCount: (input.match(BIDI) ?? []).length,
 		tagCount: (input.match(TAG) ?? []).length,
+		vsRun: Math.max(0, ...Array.from(input.matchAll(VS_RUN), (m) => [...m[0]].length)),
 		mixedScriptWords
 	};
 }
@@ -417,6 +437,14 @@ function scan(input, opts = {}) {
 		why: `${u.tagCount} invisible Unicode TAG chars (ASCII smuggling)`,
 		match: "U+E00xx"
 	});
+	if (u.vsRun >= 2) findings.push({
+		id: "OBF-VS",
+		category: "obfuscation",
+		layer: "vs-smuggled",
+		weight: 40,
+		why: `${u.vsRun} variation selectors in a row (emoji smuggling: one hidden byte each)`,
+		match: "U+FE0x/U+E01xx"
+	});
 	if (u.bidiCount > 0) findings.push({
 		id: "OBF-BIDI",
 		category: "obfuscation",
@@ -461,7 +489,7 @@ function scan(input, opts = {}) {
 /** Spotlighting: wrap untrusted content in a random-nonce fence so the model can tell data from instructions. */
 function fence(untrusted, source = "external") {
 	const nonce = Array.from(crypto.getRandomValues(/* @__PURE__ */ new Uint8Array(6)), (b) => b.toString(16).padStart(2, "0")).join("");
-	const clean = untrusted.normalize("NFKC").replace(/[\u200B-\u200D\u2060-\u2064\uFEFF\u202A-\u202E\u2066-\u2069]|[\u{E0000}-\u{E007F}]/gu, "");
+	const clean = untrusted.normalize("NFKC").replace(/[\u200B-\u200D\u2060-\u2064\uFEFF\u202A-\u202E\u2066-\u2069]|[\u{E0000}-\u{E007F}]|[\u{E0100}-\u{E01EF}]|(?:[\uFE00-\uFE0F]){2,}/gu, "");
 	return [
 		`<untrusted_${nonce} source="${source.replace(/"/g, "")}">`,
 		clean.replaceAll(`untrusted_${nonce}`, "untrusted_x"),
@@ -505,7 +533,7 @@ function checkToolCall(call, policy) {
 	};
 }
 // src/mcp.ts
-const VERSION = "0.2.0";
+const VERSION = "0.3.1";
 const PROTOCOLS = [
 	"2025-11-25",
 	"2025-06-18",
