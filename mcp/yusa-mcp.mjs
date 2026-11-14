@@ -660,6 +660,36 @@ function fence(untrusted, source = "external") {
 }
 // src/engine/policy.ts
 const MAX_UINT_PREFIX = "115792089237316195423570985008687907853269984665640564039457";
+const SELECTORS = {
+	"095ea7b3": "approve",
+	"39509351": "increaseAllowance",
+	"a9059cbb": "transfer",
+	"23b872dd": "transferFrom",
+	"a22cb465": "setApprovalForAll",
+	"d505accf": "permit",
+	"87517c45": "permit2Approve"
+};
+/** Pulls addresses and risky approvals out of raw EVM calldata, including calls nested in multicall bytes. */
+function decodeCalldata(hex) {
+	if (!/^0x[0-9a-fA-F]{8}(?:[0-9a-fA-F]{2})*$/.test(hex) || hex.length < 74) return null;
+	const h = hex.slice(2).toLowerCase();
+	const fn = SELECTORS[h.slice(0, 8)] ?? null;
+	const word = (i) => h.slice(8 + i * 64, 8 + (i + 1) * 64);
+	const addresses = /* @__PURE__ */ new Set();
+	for (let p = 8; p + 64 <= h.length; p += 8) {
+		const w = h.slice(p, p + 64);
+		if (w.startsWith("0".repeat(24)) && !w.startsWith("0".repeat(32)) && !w.endsWith("00000000")) addresses.add("0x" + w.slice(24));
+	}
+	const max = (w) => /^f{40,}$/.test(w.replace(/^0+/, ""));
+	const unlimited = (fn === "approve" || fn === "increaseAllowance") && max(word(1)) || fn === "permit" && max(word(2)) || fn === "permit2Approve" && max(word(2));
+	const approvalForAll = fn === "setApprovalForAll" && /[1-9a-f]/.test(word(1));
+	return {
+		fn,
+		addresses: [...addresses],
+		unlimited,
+		approvalForAll
+	};
+}
 function strings(v, out = []) {
 	if (typeof v === "string") out.push(v);
 	else if (Array.isArray(v)) v.forEach((x) => strings(x, out));
@@ -676,7 +706,17 @@ function checkToolCall(call, policy) {
 	if (!policy.allowTools.includes(call.tool)) bump("block", `tool "${call.tool}" not in allowlist`);
 	const all = strings(call.args);
 	const allowAddr = new Set(policy.allowAddresses.map((a) => a.toLowerCase()));
-	for (const a of new Set(all.flatMap((s) => s.match(/0x[0-9a-fA-F]{40}(?![0-9a-fA-F])/g) ?? []))) if (!allowAddr.has(a.toLowerCase())) bump("block", `address ${a.slice(0, 8)}…${a.slice(-4)} not in allowlist`);
+	const addrs = new Set(all.flatMap((s) => s.match(/0x[0-9a-fA-F]{40}(?![0-9a-fA-F])/g) ?? []).map((a) => a.toLowerCase()));
+	for (const s of all) {
+		const d = decodeCalldata(s.trim());
+		if (!d) continue;
+		d.addresses.forEach((a) => addrs.add(a));
+		const name = d.fn ?? "unknown function";
+		if (d.unlimited) bump("block", `calldata ${name}: unlimited approval`);
+		if (d.approvalForAll) bump("block", "calldata setApprovalForAll: hands over every NFT in the collection");
+		if (!d.fn && d.addresses.length === 0) bump("review", "calldata for an unknown function; decode it before signing");
+	}
+	for (const a of addrs) if (!allowAddr.has(a)) bump("block", `address ${a.slice(0, 8)}…${a.slice(-4)} not in allowlist`);
 	for (const s of all) for (const m of s.matchAll(/https?:\/\/([^/\s:?#]+)/g)) {
 		const host = m[1].toLowerCase();
 		if (!policy.allowHosts.some((h) => host === h || host.endsWith("." + h))) bump("block", `host ${host} not in allowlist`);
@@ -694,7 +734,7 @@ function checkToolCall(call, policy) {
 	};
 }
 // src/mcp.ts
-const VERSION = "0.3.3";
+const VERSION = "0.3.4";
 const PROTOCOLS = [
 	"2025-11-25",
 	"2025-06-18",
@@ -756,7 +796,7 @@ const TOOLS = [
 	{
 		name: "yusa_check_tool_call",
 		title: "Check a tool call against policy",
-		description: "Call this BEFORE running any tool call that moves value, sends data out, or touches an address or URL. Checks the tool name, every 0x address, every host, a value cap, unlimited approvals, and secrets or exfiltration endpoints in the arguments. Returns allow or block with reasons. If block, do not run the call; tell the user why.",
+		description: "Call this BEFORE running any tool call that moves value, sends data out, or touches an address or URL. Checks the tool name, every 0x address, every host, a value cap, unlimited approvals, and secrets or exfiltration endpoints in the arguments. Raw transaction calldata (a 0x hex `data` field) is decoded, so addresses hidden inside approve, transfer, setApprovalForAll, permit or multicall batches are checked too. Returns allow, review or block with reasons. If not allow, do not run the call; tell the user why.",
 		inputSchema: {
 			type: "object",
 			properties: {

@@ -13,7 +13,7 @@ Live demo: https://yusasecurity.xyz · X: [@yusasecurity](https://x.com/yusasecu
 | **Unmask** | Decodes Unicode TAG smuggling, base64 blobs, HTML comments and `display:none` text. Strips zero-width and bidi characters. Folds Cyrillic/Greek look-alikes and leetspeak back to Latin. |
 | **Score** | 25 rules: instruction override, role hijack, prompt extraction, forged chat-template tokens, wallet drain and unlimited approvals, exfiltration beacons. 10 secret formats. A directive found in a hidden layer is always a block. |
 | **Fence** | Wraps untrusted text in a tag with a random nonce per call, so the model can tell data from orders. |
-| **Gate** | Checks every tool call before it runs: tool, recipient address, host, value cap, unlimited approvals, secrets in outbound arguments. |
+| **Gate** | Checks every tool call before it runs: tool, recipient address, host, value cap, unlimited approvals, secrets in outbound arguments. Decodes raw transaction calldata too, so a spender or recipient hidden inside `data` (approve, transfer, setApprovalForAll, permit, multicall batches) is checked against the allowlist. |
 
 The engine (`src/engine/`) has no dependencies and no network access. It runs in the browser, in Node, as a CLI, and as an MCP server.
 
@@ -44,7 +44,7 @@ curl -s $URL | node src/cli.ts
 |---|---|---|
 | `yusa_scan` | on any text from outside the conversation, before acting on it | `allow` / `review` / `block`, findings, decoded hidden text (secrets masked) |
 | `yusa_fence` | before putting that text into a prompt | the text in a random-nonce tag, invisible characters stripped |
-| `yusa_check_tool_call` | before any call that moves value or sends data out | `allow` / `block` with reasons |
+| `yusa_check_tool_call` | before any call that moves value or sends data out, including raw transactions with `data` calldata | `allow` / `review` / `block` with reasons |
 
 Listed in the [MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.yusasecurity/yusa) as `io.github.yusasecurity/yusa`. For Claude Desktop, download [`yusa.mcpb`](https://github.com/yusasecurity/yusa/releases/latest/download/yusa.mcpb) and open it. Or run it straight from a clone:
 
@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: yusasecurity/yusa@v0.3.3
+      - uses: yusasecurity/yusa@v0.3.4
 ```
 
 | Input | Default | |
