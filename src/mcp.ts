@@ -7,7 +7,7 @@ import { checkToolCall, type Policy } from "./engine/policy.ts";
 // MCP server over stdio (newline-delimited JSON-RPC 2.0). No dependencies, no network.
 // Optional: YUSA_POLICY=/path/policy.json supplies the default policy for yusa_check_tool_call.
 
-const VERSION = "0.3.4";
+const VERSION = "0.3.5";
 const PROTOCOLS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
 const MAX_INPUT = 1_000_000;
 
@@ -48,7 +48,7 @@ const TOOLS = [
     name: "yusa_check_tool_call",
     title: "Check a tool call against policy",
     description:
-      "Call this BEFORE running any tool call that moves value, sends data out, or touches an address or URL. Checks the tool name, every 0x address, every host, a value cap, unlimited approvals, and secrets or exfiltration endpoints in the arguments. Raw transaction calldata (a 0x hex `data` field) is decoded, so addresses hidden inside approve, transfer, setApprovalForAll, permit or multicall batches are checked too. Returns allow, review or block with reasons. If not allow, do not run the call; tell the user why.",
+      "Call this BEFORE running any tool call that moves value, sends data out, or touches an address or URL. Checks the tool name, every 0x address, every host, a value cap, unlimited approvals, and secrets or exfiltration endpoints in the arguments. Raw transaction calldata (a 0x hex `data` field) is decoded, so addresses hidden inside approve, transfer, setApprovalForAll, permit or multicall batches are checked too. Values are read in wei, hex, gwei or ETH; unlimited Permit/Permit2 typed-data signatures and blind eth_sign are blocked; names like x.eth must be resolved to 0x addresses first. Returns allow, review or block with reasons. If not allow, do not run the call; tell the user why.",
     inputSchema: {
       type: "object",
       properties: {

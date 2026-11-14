@@ -13,7 +13,7 @@ Live demo: https://yusasecurity.xyz · X: [@yusasecurity](https://x.com/yusasecu
 | **Unmask** | Decodes Unicode TAG smuggling, base64 blobs, HTML comments and `display:none` text. Strips zero-width and bidi characters. Folds Cyrillic/Greek look-alikes and leetspeak back to Latin. |
 | **Score** | 25 rules: instruction override, role hijack, prompt extraction, forged chat-template tokens, wallet drain and unlimited approvals, exfiltration beacons. 10 secret formats. A directive found in a hidden layer is always a block. |
 | **Fence** | Wraps untrusted text in a tag with a random nonce per call, so the model can tell data from orders. |
-| **Gate** | Checks every tool call before it runs: tool, recipient address, host, value cap, unlimited approvals, secrets in outbound arguments. Decodes raw transaction calldata too, so a spender or recipient hidden inside `data` (approve, transfer, setApprovalForAll, permit, multicall batches) is checked against the allowlist. |
+| **Gate** | Checks every tool call before it runs: tool, recipient address, host, value cap, unlimited approvals, secrets in outbound arguments. Decodes raw transaction calldata too, so a spender or recipient hidden inside `data` (approve, transfer, setApprovalForAll, permit, multicall batches) is checked against the allowlist. Reads values in wei, hex, gwei or "5 ETH" (unreadable values block), blocks unlimited Permit / Permit2 signatures and blind `eth_sign`, and refuses ENS names or bare hex where an address belongs. |
 
 The engine (`src/engine/`) has no dependencies and no network access. It runs in the browser, in Node, as a CLI, and as an MCP server.
 
@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: yusasecurity/yusa@v0.3.4
+      - uses: yusasecurity/yusa@v0.3.5
 ```
 
 | Input | Default | |

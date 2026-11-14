@@ -156,3 +156,37 @@ test("calldata: bounded calls to allowlisted addresses pass", () => {
 test("calldata: unknown function with no addresses goes to review", () => {
   assert.equal(tx("0xdeadbeef" + pad("5")).verdict, "review");
 });
+
+const gate = (args: Record<string, unknown>, tool = "swap") => checkToolCall({ tool, args }, { ...policy, allowTools: [...policy.allowTools, "sign", "personal_sign"] }).verdict;
+const U256 = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
+
+test("value: wei, hex, units and nested transactions are read against the cap", () => {
+  assert.equal(gate({ to: "0x" + OK, value: "0x4563918244f40000" }), "block");
+  assert.equal(gate({ to: "0x" + OK, value: "5 ETH" }), "block");
+  assert.equal(gate({ tx: { to: "0x" + OK, value: "5" } }), "block");
+  assert.equal(gate({ to: "0x" + OK, value: "lots" }), "block");
+  assert.equal(gate({ to: "0x" + OK, value: "10000000000000000" }), "allow");
+  assert.equal(gate({ to: "0x" + OK, value: "20 gwei" }), "allow");
+  assert.equal(gate({ to: "0x" + OK, slippage: { value: 0.5 }, valueEth: 0.01 }), "allow");
+});
+
+test("signatures: unlimited Permit / Permit2 and blind signing are blocked", () => {
+  assert.equal(gate({ primaryType: "Permit", message: { owner: "0x" + OK, spender: "0x" + OK, value: U256, deadline: "1" } }, "sign"), "block");
+  assert.equal(gate({ primaryType: "PermitSingle", message: { details: { token: "0x" + OK, amount: (2n ** 160n - 1n).toString() }, spender: "0x" + OK } }, "sign"), "block");
+  assert.equal(gate({ primaryType: "Permit", message: { owner: "0x" + OK, spender: "0x" + OK, value: "1000000000", deadline: "1" } }, "sign"), "allow");
+  assert.equal(gate({ method: "eth_sign", message: "0x" + "ab".repeat(32) }, "sign"), "block");
+  assert.equal(gate({ message: "0x" + "ab".repeat(32) }, "personal_sign"), "block");
+  assert.equal(gate({ message: "Sign in: nonce 42" }, "personal_sign"), "allow");
+});
+
+test("addresses and hosts: case, bare hex, names, schemeless and non-http URLs", () => {
+  assert.equal(gate({ to: "0X" + EVIL.toUpperCase() }), "block");
+  assert.equal(gate({ to: "0X" + OK }), "allow");
+  assert.equal(gate({ to: "0x" + OK, recipient: EVIL }), "block");
+  assert.equal(gate({ to: "attacker.eth" }), "block");
+  assert.equal(gate({ url: "evil.example/collect" }, "http_get"), "block");
+  assert.equal(gate({ url: "https://api.dexscreener.com@evil.example/x" }, "http_get"), "block");
+  assert.equal(gate({ note: "stream to wss://evil.example/s" }, "http_get"), "block");
+  assert.equal(gate({ url: "api.dexscreener.com/latest" }, "http_get"), "allow");
+  assert.equal(gate({ to: "0x" + OK, note: "built from 4b825dc642cb6eb9a060e54bf8d69288fbee4904 v0.3.4" }), "allow");
+});
