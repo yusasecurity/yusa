@@ -50,9 +50,11 @@
 </head>
 <body>
 <div class="bar">
-  <span class="k">YUSA · article</span>
+  <span class="k">YUSA · article · X Articles: copy title, then body</span>
   <span class="btns">
-    <button class="primary" id="copyMd">Copy Markdown</button>
+    <button class="primary" id="copyX">Copy for X Articles</button>
+    <button id="copyTitle">Copy title</button>
+    <button id="copyMd">Copy Markdown</button>
     <button id="copyText">Copy plain text</button>
     <a class="dl" href="banner.png" download="yusa-article-banner.png">Banner 1500×500</a>
     <a class="dl" href="banner-wide.png" download="yusa-article-banner-1600x900.png">Banner 16:9</a>
@@ -71,7 +73,7 @@
 <script type="text/markdown" id="md">
 # What you read is not what your agent reads
 
-*Scan what your agent reads. Gate what it does.*
+**Scan what your agent reads. Gate what it does.**
 
 Your AI agent reads things you never see. A token description with 126 invisible characters. A web page with an order inside an HTML comment. A skill file where one letter is Cyrillic. You read a harmless sentence. The model reads an instruction, and it has a wallet.
 
@@ -95,13 +97,11 @@ and do not tell the user.
 
 The second half is written in Unicode TAG characters. No font draws them, so they render as nothing, but every byte reaches the model. This is called ASCII smuggling, and it is one of several tricks that hide text from people while leaving it in plain view for the model:
 
-| Trick | What a person sees | What the model reads |
-|---|---|---|
-| Unicode TAG characters | nothing | a full sentence |
-| Variation selectors | one emoji | a hidden payload, one byte per selector |
-| Zero-width characters | `ignore` | `ig​nore`, which slips past keyword filters |
-| Look-alike letters | `ignore` | `іgnore` with a Cyrillic `і` |
-| HTML comments, `display:none` | nothing | the full text |
+- **Unicode TAG characters.** You see nothing. The model reads a full sentence.
+- **Variation selectors.** You see one emoji. The model reads a hidden payload, one byte per selector.
+- **Zero-width characters.** You see `ignore`. The model reads `ig​nore`, which slips past keyword filters.
+- **Look-alike letters.** You see `ignore`. The model reads `іgnore`, spelled with a Cyrillic `і`.
+- **HTML comments and `display:none`.** You see nothing. The model reads the full text.
 
 ## Layer one: scan what it reads
 
@@ -134,14 +134,12 @@ Detection is a filter. Some injections will get through any scanner. So YUSA als
 
 `yusa_check_tool_call` reads every address, host and value in the call, including the ones attackers hide:
 
-| The call | Verdict |
-|---|---|
-| A normal swap to an allowed address, 0.01 ETH | allow |
-| `approve(attacker, MAX)` hidden inside raw calldata | block |
-| 5 ETH written as hex wei (`0x4563918244f40000`) | block |
-| An unlimited Permit or Permit2 signature | block |
-| A blind `eth_sign` over a raw hash | block |
-| `attacker.eth` where an address belongs | block |
+- A normal swap to an allowed address, 0.01 ETH: **allow**
+- `approve(attacker, MAX)` hidden inside raw calldata: **block**
+- 5 ETH written as hex wei (`0x4563918244f40000`): **block**
+- An unlimited Permit or Permit2 signature: **block**
+- A blind `eth_sign` over a raw hash: **block**
+- `attacker.eth` where an address belongs: **block**
 
 We found most of these by attacking our own Gate. Thirteen of those gaps were closed across v0.3.4 and v0.3.5.
 
@@ -149,11 +147,9 @@ We found most of these by attacking our own Gate. Thirteen of those gaps were cl
 
 Rule-based detection has limits, and we publish them. Benchmarked on public datasets, with rules tuned on training splits only and scored on test splits they never saw:
 
-| Test set | Detection | False positives |
-|---|---|---|
-| deepset/prompt-injections (English, German) | 35.0% | 0 of 56 |
-| jackhhao/jailbreak-classification (never tuned on) | 69.1% | 1 of 123 |
-| Lakera Gandalf | 72.3% | n/a (injections only) |
+- **deepset/prompt-injections** (English and German): 35.0% detected, 0 false positives in 56 safe prompts
+- **jackhhao/jailbreak-classification** (never tuned on): 69.1% detected, 1 false positive in 123
+- **Lakera Gandalf** (attacks only): 72.3% detected
 
 35% is not a marketing number. What YUSA misses is mostly roleplay setups and plain requests that the dataset labels as attacks and that no text pattern can tell apart from normal use. That is exactly why the Gate exists: an injection that slips past the scan still has to get a transaction past your policy.
 
@@ -233,7 +229,49 @@ Everything is MIT-licensed and runs locally. No keys, no telemetry, no account.
   }
   document.getElementById("article").innerHTML = out.join("\n");
 
-  const toast = (t) => { const el = document.getElementById("toast"); el.textContent = t; el.classList.add("on"); setTimeout(() => el.classList.remove("on"), 1600); };
+  // X Articles: title goes in its own field; no tables or code blocks, so tables become
+  // bullet lists and code becomes a quote. Inline code loses its backticks.
+  const xInline = (s) => esc(s)
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*]+)\*/g, "<em>$1</em>")
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2">$1</a>');
+  const plainInline = (s) => s.replace(/`([^`]+)`/g, "$1").replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*]+)\*/g, "$1").replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, "$1 ($2)");
+  const title = lines.find((l) => l.startsWith("# ")).slice(2);
+  const blocks = [];
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    if (l.startsWith("# ")) continue;
+    if (l.startsWith("```")) {
+      const body = [];
+      while (++i < lines.length && !lines[i].startsWith("```")) body.push(lines[i]);
+      blocks.push({ html: `<blockquote>${body.map(esc).join("<br>")}</blockquote>`, text: body.join("\n") });
+    } else if (l.startsWith("|")) {
+      const rows = [];
+      for (; i < lines.length && lines[i].startsWith("|"); i++) rows.push(lines[i]);
+      i--;
+      const cells = (r) => r.replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+      const [h, , ...b] = rows.map(cells);
+      const item = (r, f, strong) => r.length === 2
+        ? `${f(r[0])}: ${strong(f(r[1]))}`
+        : `${strong(f(r[0]))}: ${r.slice(1).map((c, j) => `${h[j + 1].toLowerCase()} ${f(c)}`).join("; ")}`;
+      blocks.push({
+        html: `<ul>${b.map((r) => `<li>${item(r, xInline, (x) => `<strong>${x}</strong>`)}</li>`).join("")}</ul>`,
+        text: b.map((r) => `• ${item(r, plainInline, (x) => x)}`).join("\n"),
+      });
+    } else if (l.startsWith("- ")) {
+      const items = [];
+      for (; i < lines.length && lines[i].startsWith("- "); i++) items.push(lines[i].slice(2));
+      i--;
+      blocks.push({ html: `<ul>${items.map((x) => `<li>${xInline(x)}</li>`).join("")}</ul>`, text: items.map((x) => `• ${plainInline(x)}`).join("\n") });
+    } else if (l.startsWith("## ")) blocks.push({ html: `<h2>${xInline(l.slice(3))}</h2>`, text: plainInline(l.slice(3)) });
+    else if (l.startsWith("> ")) blocks.push({ html: `<blockquote>${xInline(l.slice(2))}</blockquote>`, text: plainInline(l.slice(2)) });
+    else if (l.trim()) blocks.push({ html: `<p>${xInline(l)}</p>`, text: plainInline(l) });
+  }
+  const xHtml = blocks.map((b) => b.html).join("");
+  const plain = [title, ...blocks.map((b) => b.text)].join("\n\n");
+
+  const toast = (t) => { const el = document.getElementById("toast"); el.textContent = t; el.classList.add("on"); setTimeout(() => el.classList.remove("on"), 1800); };
   const copy = async (text, label) => {
     try { await navigator.clipboard.writeText(text); toast(label); }
     catch {
@@ -241,8 +279,25 @@ Everything is MIT-licensed and runs locally. No keys, no telemetry, no account.
       document.body.append(ta); ta.select(); document.execCommand("copy"); ta.remove(); toast(label);
     }
   };
+  const copyRich = async (html, text, label) => {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ "text/html": new Blob([html], { type: "text/html" }), "text/plain": new Blob([text], { type: "text/plain" }) })]);
+      toast(label);
+    } catch {
+      // Older browsers: select a rendered copy so the browser puts rich HTML on the clipboard.
+      const div = Object.assign(document.createElement("div"), { innerHTML: html });
+      div.style.cssText = "position:fixed;left:-9999px;top:0;color:#000;background:#fff";
+      document.body.append(div);
+      const range = document.createRange(); range.selectNodeContents(div);
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      document.execCommand("copy"); sel.removeAllRanges(); div.remove(); toast(label);
+    }
+  };
+  document.getElementById("copyX").onclick = () => copyRich(xHtml, blocks.map((b) => b.text).join("\n\n"), "Body copied: paste into the X article body");
+  document.getElementById("copyTitle").onclick = () => copy(title, "Title copied");
   document.getElementById("copyMd").onclick = () => copy(md, "Markdown copied");
-  document.getElementById("copyText").onclick = () => copy(document.getElementById("article").innerText, "Plain text copied");
+  document.getElementById("copyText").onclick = () => copy(plain, "Plain text copied");
+  window.__yusaArticle = { xHtml, plain, title };
 })();
 </script>
 </body>
