@@ -536,6 +536,29 @@ function maskSecrets(s) {
 	out = out.replace(/(?:0x)?[0-9a-fA-F]{64}(?![0-9a-fA-F])/g, (m) => redact(m));
 	return out.replace(/\b(?:[a-z]{3,8}\s+){11,23}[a-z]{3,8}\b/g, (m) => m.split(/\s+/).length >= 12 ? "[12+ word phrase masked]" : m);
 }
+/** Result for a file that could not be read: block, so a scan error never reads as clean. */
+function unreadable(e) {
+	return {
+		verdict: "block",
+		score: 100,
+		findings: [{
+			id: "IO-001",
+			category: "obfuscation",
+			layer: "visible",
+			weight: 100,
+			why: `Could not read the file (${e?.code ?? "read error"}); an agent might still read it`,
+			match: ""
+		}],
+		hiddenText: [],
+		stats: {
+			invisible: 0,
+			bidi: 0,
+			tagChars: 0,
+			mixedScript: []
+		},
+		ms: 0
+	};
+}
 const SKILL_IGNORED = /* @__PURE__ */ new Set(["ACT-005", "ACT-006"]);
 function stripMentions(s) {
 	return s.replace(/```[\s\S]*?```/g, " ").replace(/`[^`\n]*`/g, " ").replace(/"[^"\n]{0,200}"|“[^”\n]{0,200}”|'[^'\n]{4,200}'/g, " ");
@@ -657,10 +680,19 @@ function walk(p, out) {
 	return out;
 }
 const files = targets.flatMap((t) => walk(t, []));
-const results = files.map((f) => ({
-	file: f,
-	r: scan(readFileSync(f, "utf8"), { mode: "skill" })
-}));
+const results = files.map((f) => {
+	try {
+		return {
+			file: f,
+			r: scan(readFileSync(f, "utf8"), { mode: "skill" })
+		};
+	} catch (e) {
+		return {
+			file: f,
+			r: unreadable(e)
+		};
+	}
+});
 if (json) console.log(JSON.stringify(results.map(({ file, r }) => ({
 	file: relative(process.cwd(), file),
 	verdict: r.verdict,
@@ -679,7 +711,7 @@ if (json) console.log(JSON.stringify(results.map(({ file, r }) => ({
 else {
 	for (const { file, r } of results) {
 		console.log(`${r.verdict.toUpperCase().padEnd(6)} ${String(r.score).padStart(3)}  ${relative(process.cwd(), file)}`);
-		for (const f of r.findings) console.log(`         ${f.id} [${f.layer}] ${f.why} «${maskSecrets(f.match)}»`);
+		for (const f of r.findings) console.log(`         ${f.id} [${f.layer}] ${f.why}${f.match ? ` «${maskSecrets(f.match)}»` : ""}`);
 		for (const h of r.hiddenText) console.log(`         hidden[${h.layer}]: ${maskSecrets(h.text).slice(0, 160)}`);
 	}
 	const n = (v) => results.filter((x) => x.r.verdict === v).length;

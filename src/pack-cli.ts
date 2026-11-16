@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import { maskSecrets, scan, type ScanResult } from "./engine/scan.ts";
+import { maskSecrets, scan, unreadable, type ScanResult } from "./engine/scan.ts";
 
 // Usage: node yusa.mjs <file|dir>... [--json]
 // Dirs are walked for SKILL.md and *.md. Exit 2 if any file blocks, 1 if any needs review.
@@ -16,7 +16,14 @@ function walk(p: string, out: string[]): string[] {
 }
 
 const files = targets.flatMap((t) => walk(t, []));
-const results: { file: string; r: ScanResult }[] = files.map((f) => ({ file: f, r: scan(readFileSync(f, "utf8"), { mode: "skill" }) }));
+// A file the scanner cannot read may still be read by the agent, so it blocks rather than passing.
+const results: { file: string; r: ScanResult }[] = files.map((f) => {
+  try {
+    return { file: f, r: scan(readFileSync(f, "utf8"), { mode: "skill" }) };
+  } catch (e) {
+    return { file: f, r: unreadable(e) };
+  }
+});
 
 if (json) {
   console.log(JSON.stringify(results.map(({ file, r }) => ({
@@ -29,7 +36,7 @@ if (json) {
 } else {
   for (const { file, r } of results) {
     console.log(`${r.verdict.toUpperCase().padEnd(6)} ${String(r.score).padStart(3)}  ${relative(process.cwd(), file)}`);
-    for (const f of r.findings) console.log(`         ${f.id} [${f.layer}] ${f.why} «${maskSecrets(f.match)}»`);
+    for (const f of r.findings) console.log(`         ${f.id} [${f.layer}] ${f.why}${f.match ? ` «${maskSecrets(f.match)}»` : ""}`);
     for (const h of r.hiddenText) console.log(`         hidden[${h.layer}]: ${maskSecrets(h.text).slice(0, 160)}`);
   }
   const n = (v: string) => results.filter((x) => x.r.verdict === v).length;

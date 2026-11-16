@@ -38,6 +38,19 @@ export function maskSecrets(s: string): string {
   return out.replace(/\b(?:[a-z]{3,8}\s+){11,23}[a-z]{3,8}\b/g, (m) => (m.split(/\s+/).length >= 12 ? "[12+ word phrase masked]" : m));
 }
 
+/** Result for a file that could not be read: block, so a scan error never reads as clean. */
+export function unreadable(e: unknown): ScanResult {
+  const code = (e as NodeJS.ErrnoException)?.code ?? "read error";
+  return {
+    verdict: "block",
+    score: 100,
+    findings: [{ id: "IO-001", category: "obfuscation", layer: "visible", weight: 100, why: `Could not read the file (${code}); an agent might still read it`, match: "" }],
+    hiddenText: [],
+    stats: { invisible: 0, bidi: 0, tagChars: 0, mixedScript: [] },
+    ms: 0,
+  };
+}
+
 export interface ScanOptions {
   /** "skill": auditing a SKILL.md / prompt file. Quoted and code spans are treated as mentions, shell is expected. */
   mode?: "input" | "skill";

@@ -1,7 +1,7 @@
 import { appendFileSync, existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { basename, extname, join, relative } from "node:path";
-import { maskSecrets, scan, type ScanResult, type Verdict } from "./engine/scan.ts";
+import { maskSecrets, scan, unreadable, type ScanResult, type Verdict } from "./engine/scan.ts";
 
 // GitHub Action entry. Inputs arrive as env (set in action.yml), never interpolated into a shell.
 const env = (k: string, d = "") => (process.env[k] ?? d).trim();
@@ -89,7 +89,13 @@ const files = [...new Set(all)]
 
 const rows: { file: string; r: ScanResult; lines: Map<string, number> }[] = [];
 for (const file of files) {
-  const text = readFileSync(join(ROOT, file), "utf8");
+  let text: string;
+  try {
+    text = readFileSync(join(ROOT, file), "utf8");
+  } catch (e) {
+    rows.push({ file, r: unreadable(e), lines: new Map() });
+    continue;
+  }
   const r = scan(text, { mode: MODE });
   if (r.verdict !== "allow") rows.push({ file, r, lines: findingLines(text, r) });
 }
@@ -99,7 +105,7 @@ for (const { file, r, lines } of rows) {
   for (const f of r.findings) {
     const line = lines.get(f.id + f.layer) ?? 1;
     const hidden = f.layer !== "visible" ? ` [${f.layer}]` : "";
-    console.log(`::${level} file=${escProp(file)},line=${line},title=${escProp(`YUSA ${f.id}`)}::${escData(`${f.why}${hidden}: ${maskSecrets(f.match)}`)}`);
+    console.log(`::${level} file=${escProp(file)},line=${line},title=${escProp(`YUSA ${f.id}`)}::${escData(`${f.why}${hidden}${f.match ? `: ${maskSecrets(f.match)}` : ""}`)}`);
   }
 }
 

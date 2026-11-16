@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { scan, fence, maskSecrets } from "./scan.ts";
+import { scan, fence, maskSecrets, unreadable } from "./scan.ts";
 import { checkToolCall, type Policy } from "./policy.ts";
 import { SAMPLES } from "./samples.ts";
 
@@ -151,6 +151,14 @@ test("calldata: bounded calls to allowlisted addresses pass", () => {
   assert.equal(tx(multicall("a9059cbb" + pad(OK) + pad("64"), "a9059cbb" + pad(OK) + pad("3e8"))).verdict, "allow");
   assert.equal(tx("0x").verdict, "allow");
   assert.equal(checkToolCall({ tool: "swap", args: { to: "0x" + OK, hash: "0x" + "ab".repeat(32) } }, policy).verdict, "allow");
+});
+
+test("unreadable file blocks with the OS reason instead of passing", () => {
+  const r = unreadable(Object.assign(new Error("denied"), { code: "EACCES" }));
+  assert.equal(r.verdict, "block");
+  assert.equal(r.findings[0].id, "IO-001");
+  assert.match(r.findings[0].why, /EACCES/);
+  assert.equal(unreadable(new Error("x")).verdict, "block");
 });
 
 test("calldata: unknown function with no addresses goes to review", () => {

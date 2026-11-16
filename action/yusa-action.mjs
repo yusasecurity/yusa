@@ -537,6 +537,29 @@ function maskSecrets(s) {
 	out = out.replace(/(?:0x)?[0-9a-fA-F]{64}(?![0-9a-fA-F])/g, (m) => redact(m));
 	return out.replace(/\b(?:[a-z]{3,8}\s+){11,23}[a-z]{3,8}\b/g, (m) => m.split(/\s+/).length >= 12 ? "[12+ word phrase masked]" : m);
 }
+/** Result for a file that could not be read: block, so a scan error never reads as clean. */
+function unreadable(e) {
+	return {
+		verdict: "block",
+		score: 100,
+		findings: [{
+			id: "IO-001",
+			category: "obfuscation",
+			layer: "visible",
+			weight: 100,
+			why: `Could not read the file (${e?.code ?? "read error"}); an agent might still read it`,
+			match: ""
+		}],
+		hiddenText: [],
+		stats: {
+			invisible: 0,
+			bidi: 0,
+			tagChars: 0,
+			mixedScript: []
+		},
+		ms: 0
+	};
+}
 const SKILL_IGNORED = /* @__PURE__ */ new Set(["ACT-005", "ACT-006"]);
 function stripMentions(s) {
 	return s.replace(/```[\s\S]*?```/g, " ").replace(/`[^`\n]*`/g, " ").replace(/"[^"\n]{0,200}"|“[^”\n]{0,200}”|'[^'\n]{4,200}'/g, " ");
@@ -764,7 +787,17 @@ for (const p of PATHS) walk(join(ROOT, p), all);
 const files = [...new Set(all)].map((f) => relative(ROOT, f)).filter((f) => !f.startsWith("..")).filter((f) => !changed || changed.includes(f)).filter((f) => !EXCLUDE.some((x) => f === x || f.startsWith(x + "/"))).sort();
 const rows = [];
 for (const file of files) {
-	const text = readFileSync(join(ROOT, file), "utf8");
+	let text;
+	try {
+		text = readFileSync(join(ROOT, file), "utf8");
+	} catch (e) {
+		rows.push({
+			file,
+			r: unreadable(e),
+			lines: /* @__PURE__ */ new Map()
+		});
+		continue;
+	}
 	const r = scan(text, { mode: MODE });
 	if (r.verdict !== "allow") rows.push({
 		file,
@@ -777,7 +810,7 @@ for (const { file, r, lines } of rows) {
 	for (const f of r.findings) {
 		const line = lines.get(f.id + f.layer) ?? 1;
 		const hidden = f.layer !== "visible" ? ` [${f.layer}]` : "";
-		console.log(`::${level} file=${escProp(file)},line=${line},title=${escProp(`YUSA ${f.id}`)}::${escData(`${f.why}${hidden}: ${maskSecrets(f.match)}`)}`);
+		console.log(`::${level} file=${escProp(file)},line=${line},title=${escProp(`YUSA ${f.id}`)}::${escData(`${f.why}${hidden}${f.match ? `: ${maskSecrets(f.match)}` : ""}`)}`);
 	}
 }
 const count = (v) => rows.filter((x) => x.r.verdict === v).length;
