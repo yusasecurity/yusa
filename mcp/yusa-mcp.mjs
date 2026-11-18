@@ -808,7 +808,7 @@ function checkToolCall(call, policy) {
 	};
 }
 // src/mcp.ts
-const VERSION = "0.3.5";
+const VERSION = "0.3.6";
 const PROTOCOLS = [
 	"2025-11-25",
 	"2025-06-18",
