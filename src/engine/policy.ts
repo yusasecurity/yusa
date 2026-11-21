@@ -19,6 +19,17 @@ export interface PolicyResult {
   reasons: string[];
 }
 
+/** The caller may be the hijacked agent, so its policy can only tighten the operator's. */
+export function narrowPolicy(base: Policy, req: Policy): Policy {
+  const keep = (a: string[], b: string[]) => a.filter((x) => b.some((y) => y.toLowerCase() === x.toLowerCase()));
+  return {
+    allowTools: keep(req.allowTools, base.allowTools),
+    allowAddresses: keep(req.allowAddresses, base.allowAddresses),
+    allowHosts: keep(req.allowHosts, base.allowHosts),
+    maxValueEth: Math.min(req.maxValueEth, base.maxValueEth),
+  };
+}
+
 const MAX_UINT_PREFIX = "115792089237316195423570985008687907853269984665640564039457";
 
 const SELECTORS: Record<string, string> = {

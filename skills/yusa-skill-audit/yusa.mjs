@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 // src/engine/normalize.ts
 const ZERO_WIDTH = /[\u200B-\u200D\u2060-\u2064\uFEFF\u00AD\u180E]/g;
@@ -673,10 +673,12 @@ function scan(input, opts = {}) {
 const args = process.argv.slice(2);
 const json = args.includes("--json");
 const targets = args.filter((a) => a !== "--json");
+const SELF = realpathSync(process.argv[1]);
 function walk(p, out) {
+	if (realpathSync(p) === SELF) return out;
 	if (statSync(p).isDirectory()) {
 		for (const e of readdirSync(p)) if (e !== "node_modules" && e !== ".git") walk(join(p, e), out);
-	} else if (/\.md$/i.test(p)) out.push(p);
+	} else out.push(p);
 	return out;
 }
 const files = targets.flatMap((t) => walk(t, []));

@@ -659,6 +659,16 @@ function fence(untrusted, source = "external") {
 	].join("\n");
 }
 // src/engine/policy.ts
+/** The caller may be the hijacked agent, so its policy can only tighten the operator's. */
+function narrowPolicy(base, req) {
+	const keep = (a, b) => a.filter((x) => b.some((y) => y.toLowerCase() === x.toLowerCase()));
+	return {
+		allowTools: keep(req.allowTools, base.allowTools),
+		allowAddresses: keep(req.allowAddresses, base.allowAddresses),
+		allowHosts: keep(req.allowHosts, base.allowHosts),
+		maxValueEth: Math.min(req.maxValueEth, base.maxValueEth)
+	};
+}
 const MAX_UINT_PREFIX = "115792089237316195423570985008687907853269984665640564039457";
 const SELECTORS = {
 	"095ea7b3": "approve",
@@ -808,7 +818,7 @@ function checkToolCall(call, policy) {
 	};
 }
 // src/mcp.ts
-const VERSION = "0.3.6";
+const VERSION = "0.3.7";
 const PROTOCOLS = [
 	"2025-11-25",
 	"2025-06-18",
@@ -884,7 +894,7 @@ const TOOLS = [
 				},
 				policy: {
 					type: "object",
-					description: "Optional. Overrides the server's default policy (YUSA_POLICY).",
+					description: "Optional. Used when the server has no YUSA_POLICY. With YUSA_POLICY set, it can only narrow the server policy, never widen it.",
 					properties: {
 						allowTools: {
 							type: "array",
@@ -981,7 +991,8 @@ function runTool(name, args) {
 			const tool = str(args, "tool", true);
 			const callArgs = args.args;
 			if (!callArgs || typeof callArgs !== "object" || Array.isArray(callArgs)) throw new ToolError(`"args" must be an object`);
-			const policy = args.policy ? normalizePolicy(args.policy) : DEFAULT_POLICY;
+			const req = args.policy ? normalizePolicy(args.policy) : null;
+			const policy = DEFAULT_POLICY ? req ? narrowPolicy(DEFAULT_POLICY, req) : DEFAULT_POLICY : req;
 			if (!policy) return {
 				text: "BLOCK\n- no policy: pass `policy` or start the server with YUSA_POLICY=/path/policy.json",
 				data: {

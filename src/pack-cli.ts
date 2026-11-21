@@ -1,17 +1,21 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { maskSecrets, scan, unreadable, type ScanResult } from "./engine/scan.ts";
 
 // Usage: node yusa.mjs <file|dir>... [--json]
-// Dirs are walked for SKILL.md and *.md. Exit 2 if any file blocks, 1 if any needs review.
+// Dirs are walked for every file: a skill can tell the agent to load references/setup, so extension is no signal. Exit 2 if any file blocks, 1 if any needs review.
 const args = process.argv.slice(2);
 const json = args.includes("--json");
 const targets = args.filter((a) => a !== "--json");
 
+// The bundle holds every rule pattern, so it always matches itself. Skip it by real path, not name.
+const SELF = realpathSync(process.argv[1]);
+
 function walk(p: string, out: string[]): string[] {
+  if (realpathSync(p) === SELF) return out;
   if (statSync(p).isDirectory()) {
     for (const e of readdirSync(p)) if (e !== "node_modules" && e !== ".git") walk(join(p, e), out);
-  } else if (/\.md$/i.test(p)) out.push(p);
+  } else out.push(p);
   return out;
 }
 

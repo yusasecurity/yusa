@@ -51,6 +51,12 @@ export function unreadable(e: unknown): ScanResult {
   };
 }
 
+export function oversize(bytes: number, max: number): ScanResult {
+  const r = unreadable(null);
+  r.findings = [{ id: "IO-002", category: "obfuscation", layer: "visible", weight: 100, why: `File is ${bytes} bytes, over the ${max}-byte scan limit; an agent might still read it`, match: "" }];
+  return r;
+}
+
 export interface ScanOptions {
   /** "skill": auditing a SKILL.md / prompt file. Quoted and code spans are treated as mentions, shell is expected. */
   mode?: "input" | "skill";

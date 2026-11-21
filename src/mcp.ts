@@ -2,12 +2,12 @@
 import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { fence, maskSecrets, scan } from "./engine/scan.ts";
-import { checkToolCall, type Policy } from "./engine/policy.ts";
+import { checkToolCall, narrowPolicy, type Policy } from "./engine/policy.ts";
 
 // MCP server over stdio (newline-delimited JSON-RPC 2.0). No dependencies, no network.
 // Optional: YUSA_POLICY=/path/policy.json supplies the default policy for yusa_check_tool_call.
 
-const VERSION = "0.3.6";
+const VERSION = "0.3.7";
 const PROTOCOLS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
 const MAX_INPUT = 1_000_000;
 
@@ -56,7 +56,7 @@ const TOOLS = [
         args: { type: "object", description: "The exact arguments about to be passed." },
         policy: {
           type: "object",
-          description: "Optional. Overrides the server's default policy (YUSA_POLICY).",
+          description: "Optional. Used when the server has no YUSA_POLICY. With YUSA_POLICY set, it can only narrow the server policy, never widen it.",
           properties: {
             allowTools: { type: "array", items: { type: "string" } },
             allowAddresses: { type: "array", items: { type: "string" } },
@@ -135,7 +135,8 @@ function runTool(name: string, args: Record<string, unknown>): { text: string; d
       const tool = str(args, "tool", true);
       const callArgs = args.args;
       if (!callArgs || typeof callArgs !== "object" || Array.isArray(callArgs)) throw new ToolError(`"args" must be an object`);
-      const policy = args.policy ? normalizePolicy(args.policy) : DEFAULT_POLICY;
+      const req = args.policy ? normalizePolicy(args.policy) : null;
+      const policy = DEFAULT_POLICY ? (req ? narrowPolicy(DEFAULT_POLICY, req) : DEFAULT_POLICY) : req;
       if (!policy) {
         return {
           text: "BLOCK\n- no policy: pass `policy` or start the server with YUSA_POLICY=/path/policy.json",

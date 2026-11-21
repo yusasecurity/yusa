@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { scan, fence, maskSecrets, unreadable } from "./scan.ts";
-import { checkToolCall, type Policy } from "./policy.ts";
+import { scan, fence, maskSecrets, oversize, unreadable } from "./scan.ts";
+import { checkToolCall, narrowPolicy, type Policy } from "./policy.ts";
 import { SAMPLES } from "./samples.ts";
 
 for (const s of SAMPLES) {
@@ -159,6 +159,24 @@ test("unreadable file blocks with the OS reason instead of passing", () => {
   assert.equal(r.findings[0].id, "IO-001");
   assert.match(r.findings[0].why, /EACCES/);
   assert.equal(unreadable(new Error("x")).verdict, "block");
+});
+
+test("oversize file blocks instead of being skipped", () => {
+  const r = oversize(2_100_000, 2_000_000);
+  assert.equal(r.verdict, "block");
+  assert.equal(r.findings[0].id, "IO-002");
+});
+
+test("caller policy can only narrow the server policy", () => {
+  const A = "0x" + "11".repeat(20), B = "0x" + "22".repeat(20);
+  const base: Policy = { allowTools: ["read_file", "swap"], allowAddresses: [A], allowHosts: ["api.example.com"], maxValueEth: 1 };
+  const wide: Policy = { allowTools: ["send_eth", "swap"], allowAddresses: [A.toUpperCase().replace("0X", "0x"), B], allowHosts: ["evil.example"], maxValueEth: 1e6 };
+  const p = narrowPolicy(base, wide);
+  assert.deepEqual(p.allowTools, ["swap"]);
+  assert.equal(p.allowAddresses.length, 1);
+  assert.deepEqual(p.allowHosts, []);
+  assert.equal(p.maxValueEth, 1);
+  assert.equal(checkToolCall({ tool: "send_eth", args: { to: B, value: "5 ETH" } }, p).verdict, "block");
 });
 
 test("calldata: unknown function with no addresses goes to review", () => {

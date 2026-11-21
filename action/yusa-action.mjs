@@ -560,6 +560,18 @@ function unreadable(e) {
 		ms: 0
 	};
 }
+function oversize(bytes, max) {
+	const r = unreadable(null);
+	r.findings = [{
+		id: "IO-002",
+		category: "obfuscation",
+		layer: "visible",
+		weight: 100,
+		why: `File is ${bytes} bytes, over the ${max}-byte scan limit; an agent might still read it`,
+		match: ""
+	}];
+	return r;
+}
 const SKILL_IGNORED = /* @__PURE__ */ new Set(["ACT-005", "ACT-006"]);
 function stripMentions(s) {
 	return s.replace(/```[\s\S]*?```/g, " ").replace(/`[^`\n]*`/g, " ").replace(/"[^"\n]{0,200}"|“[^”\n]{0,200}”|'[^'\n]{4,200}'/g, " ");
@@ -713,7 +725,7 @@ function walk(p, out) {
 	if (st.isDirectory()) {
 		if (SKIP_DIRS.has(basename(p))) return;
 		for (const e of readdirSync(p)) walk(join(p, e), out);
-	} else if (st.isFile() && wanted(p) && st.size <= MAX_BYTES) out.push(p);
+	} else if (st.isFile() && wanted(p)) out.push(p);
 }
 function git(args) {
 	return execFileSync("git", [
@@ -789,6 +801,15 @@ const rows = [];
 for (const file of files) {
 	let text;
 	try {
+		const size = statSync(join(ROOT, file)).size;
+		if (size > MAX_BYTES) {
+			rows.push({
+				file,
+				r: oversize(size, MAX_BYTES),
+				lines: /* @__PURE__ */ new Map()
+			});
+			continue;
+		}
 		text = readFileSync(join(ROOT, file), "utf8");
 	} catch (e) {
 		rows.push({

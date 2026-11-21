@@ -1,7 +1,7 @@
 import { appendFileSync, existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { basename, extname, join, relative } from "node:path";
-import { maskSecrets, scan, unreadable, type ScanResult, type Verdict } from "./engine/scan.ts";
+import { maskSecrets, oversize, scan, unreadable, type ScanResult, type Verdict } from "./engine/scan.ts";
 
 // GitHub Action entry. Inputs arrive as env (set in action.yml), never interpolated into a shell.
 const env = (k: string, d = "") => (process.env[k] ?? d).trim();
@@ -32,7 +32,7 @@ function walk(p: string, out: string[]) {
   if (st.isDirectory()) {
     if (SKIP_DIRS.has(basename(p))) return;
     for (const e of readdirSync(p)) walk(join(p, e), out);
-  } else if (st.isFile() && wanted(p) && st.size <= MAX_BYTES) out.push(p);
+  } else if (st.isFile() && wanted(p)) out.push(p);
 }
 
 function git(args: string[]): string {
@@ -91,6 +91,11 @@ const rows: { file: string; r: ScanResult; lines: Map<string, number> }[] = [];
 for (const file of files) {
   let text: string;
   try {
+    const size = statSync(join(ROOT, file)).size;
+    if (size > MAX_BYTES) {
+      rows.push({ file, r: oversize(size, MAX_BYTES), lines: new Map() });
+      continue;
+    }
     text = readFileSync(join(ROOT, file), "utf8");
   } catch (e) {
     rows.push({ file, r: unreadable(e), lines: new Map() });

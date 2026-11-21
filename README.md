@@ -67,7 +67,7 @@ Other clients:
 }
 ```
 
-`YUSA_POLICY` is optional and only used by `yusa_check_tool_call`. Without it, every call must pass its own `policy`, and a call with neither is blocked.
+`YUSA_POLICY` is optional and only used by `yusa_check_tool_call`. Without it, every call must pass its own `policy`, and a call with neither is blocked. With it, a `policy` passed in the call can only narrow the server policy, never widen it, since the caller may be the hijacked agent.
 
 ```json
 {
@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: yusasecurity/yusa@v0.3.6
+      - uses: yusasecurity/yusa@v0.3.7
 ```
 
 | Input | Default | |
